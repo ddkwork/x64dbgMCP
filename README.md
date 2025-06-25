@@ -84,10 +84,10 @@ Additional functions for backward compatibility with older integrations.
 ### Build from Source
 
 
-git clone [repository-url]
-cd x64dbgmcp/build
-cmake .. -DBUILD_X64=ON     # Use -DBUILD_X64=OFF for x86
-cmake --build . --config Release
+- git clone [repository-url]
+- cd x64dbgmcp/build
+- cmake .. -DBUILD_X64=ON     # Use -DBUILD_X64=OFF for x86
+- cmake --build . --config Release
 
 
 ##  Usage Examples
