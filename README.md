@@ -64,7 +64,8 @@ Additional functions for backward compatibility with older integrations.
    Copy x64dbgmcp.py from this repos src directory
    Update local claude_desktop_config.json with path to x64dbgmcp.py
    
-       ```bash  {
+```bash
+{
   "mcpServers": {
     "x64dbg": {
       "command": "Path\To\Python",
@@ -73,8 +74,8 @@ Additional functions for backward compatibility with older integrations.
       ]
     }
   }
-         }
-    ```
+}
+```
 3. **Start Debugging**
    - Launch x64dbg
    - Start Claude Desktop
@@ -89,7 +90,7 @@ cmake .. -DBUILD_X64=ON     # Use -DBUILD_X64=OFF for x86
 cmake --build . --config Release
 
 
-## 🎯 Usage Examples
+##  Usage Examples
 
 **Set a breakpoint and analyze:**
 ```
@@ -118,7 +119,7 @@ cmake --build . --config Release
 - The AI can step through code much faster than manual debugging for analysis tasks
 
 
-## 🤝 Contributing
+## Contributing
 
 This is my first repository - feedback, improvements, and additional functionality are welcome!
 
