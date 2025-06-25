@@ -50,10 +50,7 @@ A MCP server that can bridge various LLMS with the x64dbg debugger, providing di
 - `MiscParseExpression` - Parse x64dbg expressions
 - `MiscRemoteGetProcAddress` - Get API addresses
 - `GetModuleList` - List loaded modules
-
-### Legacy Compatibility
-Additional functions for backward compatibility with older integrations.
-
+- 
 ### Quick Setup
 
 1. **Download Plugin**
@@ -114,7 +111,7 @@ Additional functions for backward compatibility with older integrations.
 
 ## Additional Notes
 
-- Claude is actaully very good at stepping through programs, identifying API's, and just building overrall awareness of a given    binary
+- Claude is actuallly very good at stepping through programs, identifying potentially important API's, and just building overrall awareness of a given binary
 - Some automatic command generation may not work perfectly with DbgCmdExec.
 - The AI can step through code much faster than manual debugging for analysis tasks
 
@@ -124,7 +121,7 @@ Additional functions for backward compatibility with older integrations.
 This is my first repository - feedback, improvements, and additional functionality are welcome!
 
 **Areas for improvement:**
-- Function cleanup (some utilities like `IsDebugActive` & 'DbgCmdExec' could be optimized)
+- Function cleanup (some utilities like `IsDebugActive` & `DbgCmdExec` could be optimized)
 - Better error handling for failed commands
 - Enhanced command validation
 
