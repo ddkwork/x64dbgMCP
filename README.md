@@ -2,7 +2,7 @@
 
 **Model Context Protocol for x64dbg**
 
-A comprehensive MCP server that can bridge various LLMS with the x64dbg debugger, providing direct access to debugging functionality through natural language.
+A MCP server that can bridge various LLMS with the x64dbg debugger, providing direct access to debugging functionality through natural language.
 
 ## Features
 
