@@ -1,0 +1,7 @@
+.idea
+log.log
+release
+test
+*.bak
+/snapshot_2025-03-15_15-57.zip
+cmake-build-debug

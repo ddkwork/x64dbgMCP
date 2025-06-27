@@ -6,7 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Define architecture (x86 or x64)
-option(BUILD_X64 "Build for 64-bit" ON)
+if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    set(BUILD_X64  OFF)
+elseif (CMAKE_SIZEOF_VOID_P EQUAL 8)
+    set(BUILD_X64  ON)
+endif()
 
 # Set output file extension based on architecture
 if(BUILD_X64)
@@ -20,27 +24,25 @@ else()
 endif()
 
 # Set paths to x64dbg SDK
-set(X64DBG_SDK_PATH "${CMAKE_SOURCE_DIR}/deps/x64dbg_sdk")
+set(X64DBG_SDK_PATH "${CMAKE_SOURCE_DIR}")
 
 # Include directories
 include_directories(
-    ${X64DBG_SDK_PATH}
-    ${X64DBG_SDK_PATH}/pluginsdk
-    ${X64DBG_SDK_PATH}/pluginsdk/nlohmann  # Add nlohmann include path
-    ${CMAKE_SOURCE_DIR}/include
+        ${X64DBG_SDK_PATH}
+        ${X64DBG_SDK_PATH}/pluginsdk
 )
 
 # Add source files
-file(GLOB SOURCES "src/*.cpp")
+file(GLOB SOURCES "*.cpp")
 
 # Create shared library (plugin)
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
 # Set output name
 set_target_properties(${PROJECT_NAME} PROPERTIES
-    PREFIX ""
-    OUTPUT_NAME "${PROJECT_NAME}"
-    SUFFIX "${PLUGIN_EXT}"
+        PREFIX ""
+        OUTPUT_NAME "${PROJECT_NAME}"
+        SUFFIX "${PLUGIN_EXT}"
 )
 
 # Define macro for architecture
@@ -113,9 +115,9 @@ elseif (CMAKE_SIZEOF_VOID_P EQUAL 8)
 endif ()
 # Just show information about where the plugin is built
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E echo ""
-    COMMAND ${CMAKE_COMMAND} -E echo "=== Plugin build complete ==="
-    COMMAND ${CMAKE_COMMAND} -E echo "Plugin built at: ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PROJECT_NAME}${PLUGIN_EXT}"
-    COMMAND ${CMAKE_COMMAND} -E echo "Install manually to: $ENV{ProgramFiles}/x64dbg/release/x${ARCH_BITS}/plugins/${PROJECT_NAME}${PLUGIN_EXT}"
-    COMMAND ${CMAKE_COMMAND} -E echo "================================="
+        COMMAND ${CMAKE_COMMAND} -E echo ""
+        COMMAND ${CMAKE_COMMAND} -E echo "=== Plugin build complete ==="
+        COMMAND ${CMAKE_COMMAND} -E echo "Plugin built at: ${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PROJECT_NAME}${PLUGIN_EXT}"
+        COMMAND ${CMAKE_COMMAND} -E echo "Install manually to: $ENV{ProgramFiles}/x64dbg/release/x${ARCH_BITS}/plugins/${PROJECT_NAME}${PLUGIN_EXT}"
+        COMMAND ${CMAKE_COMMAND} -E echo "================================="
 )

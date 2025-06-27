@@ -1,0 +1,40 @@
+name: CMake Multi-Arch Build
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build Win32/x64
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up environment
+        run: |
+          # 设置必要环境变量
+          echo "GITHUB_WORKSPACE=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          echo "BUILD_ROOT=$env:GITHUB_WORKSPACE" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Build x64
+        run: |
+          rmdir /s /q cmake-build-debug
+          cmake -G "Visual Studio 17 2022" -A x64 -S . -B cmake-build-debug
+          cmake --build cmake-build-debug --config Release -j 6
+          copy cmake-build-debug\Release\MCPx64dbg.dp64 .
+
+      - name: Build Win32
+        run: |
+          rmdir /s /q cmake-build-debug
+          cmake -G "Visual Studio 17 2022" -A Win32 -T "host=x64" -S . -B cmake-build-debug
+          cmake --build cmake-build-debug --config Release -j 6
+          copy cmake-build-debug\Release\MCPx64dbg.dp32 .
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-outputs
+          path: |
+            MCPx64dbg.dp64
+            MCPx64dbg.dp32
