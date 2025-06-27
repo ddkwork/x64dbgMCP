@@ -5,17 +5,15 @@ project(MCPx64dbg)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# 定义架构属性
+# Define architecture properties
 if(CMAKE_SIZEOF_VOID_P EQUAL 4)
     set(ARCH_BITS 32)
     set(ARCH_SUFFIX "_x86")
     set(PLUGIN_EXT ".dp32")
-    set(ARCH_DEFINE "-D_WIN32")
 elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(ARCH_BITS 64)
     set(ARCH_SUFFIX "_x64")
     set(PLUGIN_EXT ".dp64")
-    set(ARCH_DEFINE "-D_WIN64")
 endif()
 
 # Set paths to x64dbg SDK
@@ -37,9 +35,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     OUTPUT_NAME "${PROJECT_NAME}"
     SUFFIX "${PLUGIN_EXT}"
 )
-
-# 设置编译定义
-target_compile_definitions(${PROJECT_NAME} PRIVATE ${ARCH_DEFINE})
 
 # Function to find SDK libraries
 function(find_sdk_lib LIB_NAME OUTPUT_VAR)
