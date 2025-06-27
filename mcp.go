@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -36,8 +35,7 @@ func NewX64DbgRPC() *X64DbgRPC {
 	return &X64DbgRPC{}
 }
 
-// safeGet 发送 GET 请求并处理响应
-func safeGet[T any](endpoint string, params map[string]string) T {
+func request[T any](endpoint string, params map[string]string) T {
 	url := x64dbgServerURL + endpoint
 
 	// 添加查询参数
@@ -76,54 +74,12 @@ func safeGet[T any](endpoint string, params map[string]string) T {
 	return any(str)
 }
 
-// safePost 发送 POST 请求并处理响应
-func (x *X64DbgRPC) safePost(endpoint string, data any) any {
-	url := x64dbgServerURL + endpoint
-
-	var payload []byte
-	switch d := data.(type) {
-	case string:
-		payload = []byte(d)
-	default:
-		var err error
-		payload, err = json.Marshal(data)
-		if err != nil {
-			return fmt.Sprintf("Failed to marshal data: %v", err)
-		}
-	}
-
-	resp, err := client.Post(url, "application/json", bytes.NewBuffer(payload))
-	if err != nil {
-		return fmt.Sprintf("Request failed: %v", err)
-	}
-	defer func() {
-		mylog.Check(resp.Body.Close())
-	}()
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Sprintf("Failed to read response body: %v", err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Sprintf("Error %d: %s", resp.StatusCode, string(body))
-	}
-
-	// 尝试解析为 JSON
-	var jsonData any
-	if err := json.Unmarshal(body, &jsonData); err == nil {
-		return jsonData
-	}
-
-	// 返回纯文本
-	return strings.TrimSpace(string(body))
-}
-
 // =============================================================================
 // UNIFIED COMMAND EXECUTION
 // =============================================================================
 // todo 接收多个参数，返回泛型
 func (x *X64DbgRPC) ExecCommand(cmd string) bool {
-	return safeGet[bool]("ExecCommand", map[string]string{"cmd": cmd})
+	return request[bool]("ExecCommand", map[string]string{"cmd": cmd})
 }
 
 // =============================================================================
@@ -131,11 +87,11 @@ func (x *X64DbgRPC) ExecCommand(cmd string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) IsDebugActive() bool {
-	return safeGet[bool]("IsDebugActive", nil)
+	return request[bool]("IsDebugActive", nil)
 }
 
 func (x *X64DbgRPC) IsDebugging() bool {
-	return safeGet[bool]("Is_Debugging", nil)
+	return request[bool]("Is_Debugging", nil)
 }
 
 // =============================================================================
@@ -143,11 +99,11 @@ func (x *X64DbgRPC) IsDebugging() bool {
 // =============================================================================
 
 func (x *X64DbgRPC) RegisterGet(Register string) bool {
-	return safeGet[bool]("Register/Get", map[string]string{"register": Register})
+	return request[bool]("Register/Get", map[string]string{"register": Register})
 }
 
 func (x *X64DbgRPC) RegisterSet(Register, Value string) bool {
-	return safeGet[bool]("Register/Set", map[string]string{"register": Register, "value": Value})
+	return request[bool]("Register/Set", map[string]string{"register": Register, "value": Value})
 }
 
 // =============================================================================
@@ -155,19 +111,19 @@ func (x *X64DbgRPC) RegisterSet(Register, Value string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) MemoryRead(Addr, Size string) bool {
-	return safeGet[bool]("Memory/Read", map[string]string{"addr": Addr, "size": Size})
+	return request[bool]("Memory/Read", map[string]string{"addr": Addr, "size": Size})
 }
 
 func (x *X64DbgRPC) MemoryWrite(Addr, Data string) bool {
-	return safeGet[bool]("Memory/Write", map[string]string{"addr": Addr, "data": Data})
+	return request[bool]("Memory/Write", map[string]string{"addr": Addr, "data": Data})
 }
 
 func (x *X64DbgRPC) MemoryIsValidPtr(Addr string) bool {
-	return safeGet[bool]("Memory/IsValidPtr", map[string]string{"addr": Addr})
+	return request[bool]("Memory/IsValidPtr", map[string]string{"addr": Addr})
 }
 
 func (x *X64DbgRPC) MemoryGetProtect(Addr string) bool {
-	return safeGet[bool]("Memory/GetProtect", map[string]string{"addr": Addr})
+	return request[bool]("Memory/GetProtect", map[string]string{"addr": Addr})
 }
 
 // =============================================================================
@@ -175,35 +131,35 @@ func (x *X64DbgRPC) MemoryGetProtect(Addr string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) DebugRun() bool {
-	return safeGet[bool]("Debug/Run", nil)
+	return request[bool]("Debug/Run", nil)
 }
 
 func (x *X64DbgRPC) DebugPause() bool {
-	return safeGet[bool]("Debug/Pause", nil)
+	return request[bool]("Debug/Pause", nil)
 }
 
 func (x *X64DbgRPC) DebugStop() bool {
-	return safeGet[bool]("Debug/Stop", nil)
+	return request[bool]("Debug/Stop", nil)
 }
 
 func (x *X64DbgRPC) DebugStepIn() bool {
-	return safeGet[bool]("Debug/StepIn", nil)
+	return request[bool]("Debug/StepIn", nil)
 }
 
 func (x *X64DbgRPC) DebugStepOver() bool {
-	return safeGet[bool]("Debug/StepOver", nil)
+	return request[bool]("Debug/StepOver", nil)
 }
 
 func (x *X64DbgRPC) DebugStepOut() bool {
-	return safeGet[bool]("Debug/StepOut", nil)
+	return request[bool]("Debug/StepOut", nil)
 }
 
 func (x *X64DbgRPC) DebugSetBreakpoint(Addr string) bool {
-	return safeGet[bool]("Debug/SetBreakpoint", map[string]string{"addr": Addr})
+	return request[bool]("Debug/SetBreakpoint", map[string]string{"addr": Addr})
 }
 
 func (x *X64DbgRPC) DebugDeleteBreakpoint(Addr string) bool {
-	return safeGet[bool]("Debug/DeleteBreakpoint", map[string]string{"addr": Addr})
+	return request[bool]("Debug/DeleteBreakpoint", map[string]string{"addr": Addr})
 }
 
 // =============================================================================
@@ -211,14 +167,14 @@ func (x *X64DbgRPC) DebugDeleteBreakpoint(Addr string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) AssemblerAssemble(Addr, Instruction string) bool {
-	return safeGet[bool]("Assembler/Assemble", map[string]string{
+	return request[bool]("Assembler/Assemble", map[string]string{
 		"addr":        Addr,
 		"instruction": Instruction,
 	})
 }
 
 func (x *X64DbgRPC) AssemblerAssembleMem(Addr, Instruction string) bool {
-	return safeGet[bool]("Assembler/AssembleMem", map[string]string{
+	return request[bool]("Assembler/AssembleMem", map[string]string{
 		"addr":        Addr,
 		"instruction": Instruction,
 	})
@@ -229,15 +185,15 @@ func (x *X64DbgRPC) AssemblerAssembleMem(Addr, Instruction string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) StackPop() bool {
-	return safeGet[bool]("Stack/Pop", nil)
+	return request[bool]("Stack/Pop", nil)
 }
 
 func (x *X64DbgRPC) StackPush(Value string) bool {
-	return safeGet[bool]("Stack/Push", map[string]string{"value": Value})
+	return request[bool]("Stack/Push", map[string]string{"value": Value})
 }
 
 func (x *X64DbgRPC) StackPeek(Offset string) bool {
-	return safeGet[bool]("Stack/Peek", map[string]string{"offset": Offset})
+	return request[bool]("Stack/Peek", map[string]string{"offset": Offset})
 }
 
 // =============================================================================
@@ -245,7 +201,7 @@ func (x *X64DbgRPC) StackPeek(Offset string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) FlagGet(Flag string) bool {
-	return safeGet[bool]("Flag/Get", map[string]string{"flag": Flag})
+	return request[bool]("Flag/Get", map[string]string{"flag": Flag})
 }
 
 func (x *X64DbgRPC) FlagSet(Flag string, Value bool) bool {
@@ -253,7 +209,7 @@ func (x *X64DbgRPC) FlagSet(Flag string, Value bool) bool {
 	if Value {
 		value = "true"
 	}
-	return safeGet[bool]("Flag/Set", map[string]string{"flag": Flag, "value": value})
+	return request[bool]("Flag/Set", map[string]string{"flag": Flag, "value": value})
 }
 
 // =============================================================================
@@ -261,7 +217,7 @@ func (x *X64DbgRPC) FlagSet(Flag string, Value bool) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) PatternFindMem(Start, Size, Pattern string) bool {
-	return safeGet[bool]("Pattern/FindMem", map[string]string{
+	return request[bool]("Pattern/FindMem", map[string]string{
 		"start":   Start,
 		"size":    Size,
 		"pattern": Pattern,
@@ -273,11 +229,11 @@ func (x *X64DbgRPC) PatternFindMem(Start, Size, Pattern string) bool {
 // =============================================================================
 
 func (x *X64DbgRPC) MiscParseExpression(Expression string) bool {
-	return safeGet[bool]("Misc/ParseExpression", map[string]string{"expression": Expression})
+	return request[bool]("Misc/ParseExpression", map[string]string{"expression": Expression})
 }
 
 func (x *X64DbgRPC) MiscRemoteGetProcAddress(Module, API string) bool {
-	return safeGet[bool]("Misc/RemoteGetProcAddress", map[string]string{"module": Module, "api": API})
+	return request[bool]("Misc/RemoteGetProcAddress", map[string]string{"module": Module, "api": API})
 }
 
 // =============================================================================
@@ -289,11 +245,11 @@ func (x *X64DbgRPC) SetRegister(Name, Value string) bool {
 }
 
 func (x *X64DbgRPC) MemRead(Addr, Size string) bool {
-	return safeGet[bool]("MemRead", map[string]string{"addr": Addr, "size": Size})
+	return request[bool]("MemRead", map[string]string{"addr": Addr, "size": Size})
 }
 
 func (x *X64DbgRPC) MemWrite(Addr, Data string) bool {
-	return safeGet[bool]("MemWrite", map[string]string{"addr": Addr, "data": Data})
+	return request[bool]("MemWrite", map[string]string{"addr": Addr, "data": Data})
 }
 
 func (x *X64DbgRPC) SetBreakpoint(Addr string) bool {
@@ -351,30 +307,30 @@ func (x *X64DbgRPC) Disassemble(Addr string) {
 }
 
 func (x *X64DbgRPC) DisasmGetInstruction(Addr string) bool {
-	return safeGet[bool]("Disasm/GetInstruction", map[string]string{"addr": Addr})
+	return request[bool]("Disasm/GetInstruction", map[string]string{"addr": Addr})
 }
 
 func (x *X64DbgRPC) DisasmGetInstructionRange(Addr string, Count int) bool {
-	return safeGet[bool]("Disasm/GetInstructionRange", map[string]string{
+	return request[bool]("Disasm/GetInstructionRange", map[string]string{
 		"addr":  Addr,
 		"count": strconv.Itoa(Count),
 	})
 }
 
 func (x *X64DbgRPC) DisasmGetInstructionAtRIP() bool {
-	return safeGet[bool]("Disasm/GetInstructionAtRIP", nil)
+	return request[bool]("Disasm/GetInstructionAtRIP", nil)
 }
 
 func (x *X64DbgRPC) StepInWithDisasm() bool {
-	return safeGet[bool]("Disasm/StepInWithDisasm", nil)
+	return request[bool]("Disasm/StepInWithDisasm", nil)
 }
 
 func (x *X64DbgRPC) GetModuleList() bool {
-	return safeGet[bool]("GetModuleList", nil)
+	return request[bool]("GetModuleList", nil)
 }
 
 func (x *X64DbgRPC) MemoryBase(Addr string) bool {
-	return safeGet[bool]("MemoryBase", map[string]string{"addr": Addr})
+	return request[bool]("MemoryBase", map[string]string{"addr": Addr})
 
 	//switch v := result.(type) {
 	//case map[string]any:
