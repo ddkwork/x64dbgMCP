@@ -53,7 +53,16 @@ find_sdk_lib(jansson JANSSON_LIB)
 find_sdk_lib(lz4 LZ4_LIB)
 find_sdk_lib(XEDParse XEDPARSE_LIB)
 
-# Link dependencies
+# 确定调试器核心库
+if(ARCH_BITS EQUAL 32)
+    set(DBG_LIB "${X64DBG_SDK_PATH}/pluginsdk/x32dbg.lib")
+    set(BRIDGE_LIB "${X64DBG_SDK_PATH}/pluginsdk/x32bridge.lib")
+else()
+    set(DBG_LIB "${X64DBG_SDK_PATH}/pluginsdk/x64dbg.lib")
+    set(BRIDGE_LIB "${X64DBG_SDK_PATH}/pluginsdk/x64bridge.lib")
+endif()
+
+# 统一链接所有依赖项
 link_directories(${X64DBG_SDK_PATH}/pluginsdk)
 target_link_libraries(${PROJECT_NAME}
     ws2_32
@@ -63,21 +72,9 @@ target_link_libraries(${PROJECT_NAME}
     ${JANSSON_LIB}
     ${LZ4_LIB}
     ${XEDPARSE_LIB}
+    ${DBG_LIB}        # 添加调试器核心库
+    ${BRIDGE_LIB}     # 添加桥接库
 )
-
-# Add architecture-specific dbg libraries
-set(DBG_LIB_PATH "${X64DBG_SDK_PATH}/pluginsdk")
-if(ARCH_BITS EQUAL 32)
-    target_link_libraries(${PROJECT_NAME}
-        "${DBG_LIB_PATH}/x32dbg.lib"
-        "${DBG_LIB_PATH}/x32bridge.lib"
-    )
-else()
-    target_link_libraries(${PROJECT_NAME}
-        "${DBG_LIB_PATH}/x64dbg.lib"
-        "${DBG_LIB_PATH}/x64bridge.lib"
-    )
-endif()
 
 # Post-build information
 set(PLUGIN_PATH "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PROJECT_NAME}${PLUGIN_EXT}")
