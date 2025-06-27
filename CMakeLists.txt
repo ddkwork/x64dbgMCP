@@ -16,13 +16,14 @@ elseif(CMAKE_SIZEOF_VOID_P EQUAL 8)
     set(PLUGIN_EXT ".dp64")
 endif()
 
-# Set paths to x64dbg SDK
-set(X64DBG_SDK_PATH "${CMAKE_SOURCE_DIR}")
+# 清晰定义插件SDK目录和项目根目录
+set(PLUGINSDK_DIR "${CMAKE_SOURCE_DIR}/pluginsdk")
+set(PROJECT_ROOT "${CMAKE_SOURCE_DIR}")
 
-# Include directories
+# 包含目录 - 明确区分项目文件和SDK文件
 include_directories(
-    ${X64DBG_SDK_PATH}
-    ${X64DBG_SDK_PATH}/pluginsdk
+    "${PROJECT_ROOT}"        # 项目自己的头文件
+    "${PLUGINSDK_DIR}"       # SDK头文件
 )
 
 # Add source files
@@ -36,34 +37,38 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     SUFFIX "${PLUGIN_EXT}"
 )
 
-# Function to find SDK libraries
-function(find_sdk_lib LIB_NAME OUTPUT_VAR)
-    if(EXISTS "${X64DBG_SDK_PATH}/pluginsdk/${LIB_NAME}/${LIB_NAME}${ARCH_SUFFIX}.lib")
-        set(${OUTPUT_VAR} "${X64DBG_SDK_PATH}/pluginsdk/${LIB_NAME}/${LIB_NAME}${ARCH_SUFFIX}.lib" PARENT_SCOPE)
+# 统一库查找函数，使用清晰的路径结构
+function(find_plugin_sdk_lib LIB_NAME OUTPUT_VAR)
+    set(LIB_PATH "${PLUGINSDK_DIR}/${LIB_NAME}/${LIB_NAME}${ARCH_SUFFIX}.lib")
+    set(FALLBACK_PATH "${PLUGINSDK_DIR}/${LIB_NAME}/${LIB_NAME}.lib")
+    
+    if(EXISTS "${LIB_PATH}")
+        set(${OUTPUT_VAR} "${LIB_PATH}" PARENT_SCOPE)
+    elseif(EXISTS "${FALLBACK_PATH}")
+        message(STATUS "Using fallback: ${FALLBACK_PATH}")
+        set(${OUTPUT_VAR} "${FALLBACK_PATH}" PARENT_SCOPE)
     else()
-        message(STATUS "${LIB_NAME}${ARCH_SUFFIX}.lib not found, trying ${LIB_NAME}.lib")
-        set(${OUTPUT_VAR} "${X64DBG_SDK_PATH}/pluginsdk/${LIB_NAME}/${LIB_NAME}.lib" PARENT_SCOPE)
+        message(FATAL_ERROR "Library ${LIB_NAME} not found at ${LIB_PATH} or ${FALLBACK_PATH}")
     endif()
 endfunction()
 
 # Find all required SDK libraries
-find_sdk_lib(TitanEngine TITAN_ENGINE_LIB)
-find_sdk_lib(DeviceNameResolver DEVICE_RESOLVER_LIB)
-find_sdk_lib(jansson JANSSON_LIB)
-find_sdk_lib(lz4 LZ4_LIB)
-find_sdk_lib(XEDParse XEDPARSE_LIB)
+find_plugin_sdk_lib(TitanEngine TITAN_ENGINE_LIB)
+find_plugin_sdk_lib(DeviceNameResolver DEVICE_RESOLVER_LIB)
+find_plugin_sdk_lib(jansson JANSSON_LIB)
+find_plugin_sdk_lib(lz4 LZ4_LIB)
+find_plugin_sdk_lib(XEDParse XEDPARSE_LIB)
 
 # 确定调试器核心库
 if(ARCH_BITS EQUAL 32)
-    set(DBG_LIB "${X64DBG_SDK_PATH}/pluginsdk/x32dbg.lib")
-    set(BRIDGE_LIB "${X64DBG_SDK_PATH}/pluginsdk/x32bridge.lib")
+    set(DBG_LIB "${PLUGINSDK_DIR}/x32dbg.lib")
+    set(BRIDGE_LIB "${PLUGINSDK_DIR}/x32bridge.lib")
 else()
-    set(DBG_LIB "${X64DBG_SDK_PATH}/pluginsdk/x64dbg.lib")
-    set(BRIDGE_LIB "${X64DBG_SDK_PATH}/pluginsdk/x64bridge.lib")
+    set(DBG_LIB "${PLUGINSDK_DIR}/x64dbg.lib")
+    set(BRIDGE_LIB "${PLUGINSDK_DIR}/x64bridge.lib")
 endif()
 
 # 统一链接所有依赖项
-link_directories(${X64DBG_SDK_PATH}/pluginsdk)
 target_link_libraries(${PROJECT_NAME}
     ws2_32
     winhttp
@@ -72,8 +77,8 @@ target_link_libraries(${PROJECT_NAME}
     ${JANSSON_LIB}
     ${LZ4_LIB}
     ${XEDPARSE_LIB}
-    ${DBG_LIB}        # 添加调试器核心库
-    ${BRIDGE_LIB}     # 添加桥接库
+    ${DBG_LIB}
+    ${BRIDGE_LIB}
 )
 
 # Post-build information
