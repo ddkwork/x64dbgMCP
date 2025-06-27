@@ -18,30 +18,26 @@ import (
 	"github.com/ddkwork/golibrary/std/mylog"
 )
 
-const (
-	DefaultX64dbgServer = "http://127.0.0.1:8888/"
-)
+const DefaultX64dbgServer = "http://127.0.0.1:8888/"
 
 var x64dbgServerURL string
 
 // X64DbgRPC 结构体包含所有调试方法
-type X64DbgRPC struct {
-	client *http.Client
+type X64DbgRPC struct{}
+
+var client = &http.Client{
+	Timeout: 15 * time.Second,
+	Transport: &http.Transport{
+		DisableKeepAlives: true,
+	},
 }
 
 func NewX64DbgRPC() *X64DbgRPC {
-	return &X64DbgRPC{
-		client: &http.Client{
-			Timeout: 15 * time.Second,
-			Transport: &http.Transport{
-				DisableKeepAlives: true,
-			},
-		},
-	}
+	return &X64DbgRPC{}
 }
 
 // safeGet 发送 GET 请求并处理响应
-func (x *X64DbgRPC) safeGet(endpoint string, params map[string]string) any {
+func safeGet[T any](endpoint string, params map[string]string) T {
 	url := x64dbgServerURL + endpoint
 
 	// 添加查询参数
@@ -53,31 +49,31 @@ func (x *X64DbgRPC) safeGet(endpoint string, params map[string]string) any {
 		url += "?" + strings.TrimSuffix(query, "&")
 	}
 
-	resp, err := x.client.Get(url)
-	if err != nil {
-		return fmt.Sprintf("Request failed: %v", err)
-	}
+	resp := mylog.Check2(client.Get(url))
 	defer func() {
 		mylog.Check(resp.Body.Close())
 	}()
 
-	body, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return fmt.Sprintf("Failed to read response body: %v", err)
-	}
+	body := mylog.Check2(io.ReadAll(resp.Body))
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Sprintf("Error %d: %s", resp.StatusCode, string(body))
+		mylog.Check(fmt.Sprintf("Error %d: %s", resp.StatusCode, string(body)))
 	}
 
 	// 尝试解析为 JSON
-	var jsonData any
+	var jsonData T
 	if err := json.Unmarshal(body, &jsonData); err == nil {
 		return jsonData
 	}
-
+	str := strings.TrimSpace(string(body))
+	if strings.EqualFold(str, "true") {
+		return any(true)
+	}
+	if strings.EqualFold(str, "false") {
+		return any(false)
+	}
 	// 返回纯文本
-	return strings.TrimSpace(string(body))
+	return any(str)
 }
 
 // safePost 发送 POST 请求并处理响应
@@ -96,7 +92,7 @@ func (x *X64DbgRPC) safePost(endpoint string, data any) any {
 		}
 	}
 
-	resp, err := x.client.Post(url, "application/json", bytes.NewBuffer(payload))
+	resp, err := client.Post(url, "application/json", bytes.NewBuffer(payload))
 	if err != nil {
 		return fmt.Sprintf("Request failed: %v", err)
 	}
@@ -125,470 +121,293 @@ func (x *X64DbgRPC) safePost(endpoint string, data any) any {
 // =============================================================================
 // UNIFIED COMMAND EXECUTION
 // =============================================================================
-
-func (x *X64DbgRPC) ExecCommand(req struct{ Cmd string }, res *string) error {
-	result := x.safeGet("ExecCommand", map[string]string{"cmd": req.Cmd})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+// todo 接收多个参数，返回泛型
+func (x *X64DbgRPC) ExecCommand(cmd string) bool {
+	return safeGet[bool]("ExecCommand", map[string]string{"cmd": cmd})
 }
 
 // =============================================================================
 // DEBUGGING STATUS
 // =============================================================================
 
-func (x *X64DbgRPC) IsDebugActive(_ struct{}, res *bool) error {
-	result := x.safeGet("IsDebugActive", nil)
-	if str, ok := result.(string); ok {
-		*res = strings.EqualFold(str, "true")
-		return nil
-	}
-	*res = false
-	return nil
+func (x *X64DbgRPC) IsDebugActive() bool {
+	return safeGet[bool]("IsDebugActive", nil)
 }
 
-func (x *X64DbgRPC) IsDebugging(_ struct{}, res *bool) error {
-	result := x.safeGet("Is_Debugging", nil)
-	if str, ok := result.(string); ok {
-		*res = strings.EqualFold(str, "true")
-		return nil
-	}
-	*res = false
-	return nil
+func (x *X64DbgRPC) IsDebugging() bool {
+	return safeGet[bool]("Is_Debugging", nil)
 }
 
 // =============================================================================
 // REGISTER API
 // =============================================================================
 
-func (x *X64DbgRPC) RegisterGet(req struct{ Register string }, res *string) error {
-	result := x.safeGet("Register/Get", map[string]string{"register": req.Register})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) RegisterGet(Register string) bool {
+	return safeGet[bool]("Register/Get", map[string]string{"register": Register})
 }
 
-func (x *X64DbgRPC) RegisterSet(req struct{ Register, Value string }, res *string) error {
-	result := x.safeGet("Register/Set", map[string]string{"register": req.Register, "value": req.Value})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) RegisterSet(Register, Value string) bool {
+	return safeGet[bool]("Register/Set", map[string]string{"register": Register, "value": Value})
 }
 
 // =============================================================================
 // MEMORY API (Enhanced)
 // =============================================================================
 
-func (x *X64DbgRPC) MemoryRead(req struct{ Addr, Size string }, res *string) error {
-	result := x.safeGet("Memory/Read", map[string]string{"addr": req.Addr, "size": req.Size})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MemoryRead(Addr, Size string) bool {
+	return safeGet[bool]("Memory/Read", map[string]string{"addr": Addr, "size": Size})
 }
 
-func (x *X64DbgRPC) MemoryWrite(req struct{ Addr, Data string }, res *string) error {
-	result := x.safeGet("Memory/Write", map[string]string{"addr": req.Addr, "data": req.Data})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MemoryWrite(Addr, Data string) bool {
+	return safeGet[bool]("Memory/Write", map[string]string{"addr": Addr, "data": Data})
 }
 
-func (x *X64DbgRPC) MemoryIsValidPtr(req struct{ Addr string }, res *bool) error {
-	result := x.safeGet("Memory/IsValidPtr", map[string]string{"addr": req.Addr})
-	if str, ok := result.(string); ok {
-		*res = strings.EqualFold(str, "true")
-		return nil
-	}
-	*res = false
-	return nil
+func (x *X64DbgRPC) MemoryIsValidPtr(Addr string) bool {
+	return safeGet[bool]("Memory/IsValidPtr", map[string]string{"addr": Addr})
 }
 
-func (x *X64DbgRPC) MemoryGetProtect(req struct{ Addr string }, res *string) error {
-	result := x.safeGet("Memory/GetProtect", map[string]string{"addr": req.Addr})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MemoryGetProtect(Addr string) bool {
+	return safeGet[bool]("Memory/GetProtect", map[string]string{"addr": Addr})
 }
 
 // =============================================================================
 // DEBUG API
 // =============================================================================
 
-func (x *X64DbgRPC) DebugRun(_ struct{}, res *string) error {
-	result := x.safeGet("Debug/Run", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugRun() bool {
+	return safeGet[bool]("Debug/Run", nil)
 }
 
-func (x *X64DbgRPC) DebugPause(_ struct{}, res *string) error {
-	result := x.safeGet("Debug/Pause", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugPause() bool {
+	return safeGet[bool]("Debug/Pause", nil)
 }
 
-func (x *X64DbgRPC) DebugStop(_ struct{}, res *string) error {
-	result := x.safeGet("Debug/Stop", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugStop() bool {
+	return safeGet[bool]("Debug/Stop", nil)
 }
 
-func (x *X64DbgRPC) DebugStepIn(_ struct{}, res *string) error {
-	result := x.safeGet("Debug/StepIn", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugStepIn() bool {
+	return safeGet[bool]("Debug/StepIn", nil)
 }
 
-func (x *X64DbgRPC) DebugStepOver(_ struct{}, res *string) error {
-	result := x.safeGet("Debug/StepOver", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugStepOver() bool {
+	return safeGet[bool]("Debug/StepOver", nil)
 }
 
-func (x *X64DbgRPC) DebugStepOut(_ struct{}, res *string) error {
-	result := x.safeGet("Debug/StepOut", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugStepOut() bool {
+	return safeGet[bool]("Debug/StepOut", nil)
 }
 
-func (x *X64DbgRPC) DebugSetBreakpoint(req struct{ Addr string }, res *string) error {
-	result := x.safeGet("Debug/SetBreakpoint", map[string]string{"addr": req.Addr})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugSetBreakpoint(Addr string) bool {
+	return safeGet[bool]("Debug/SetBreakpoint", map[string]string{"addr": Addr})
 }
 
-func (x *X64DbgRPC) DebugDeleteBreakpoint(req struct{ Addr string }, res *string) error {
-	result := x.safeGet("Debug/DeleteBreakpoint", map[string]string{"addr": req.Addr})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) DebugDeleteBreakpoint(Addr string) bool {
+	return safeGet[bool]("Debug/DeleteBreakpoint", map[string]string{"addr": Addr})
 }
 
 // =============================================================================
 // ASSEMBLER API
 // =============================================================================
 
-func (x *X64DbgRPC) AssemblerAssemble(req struct{ Addr, Instruction string }, res *map[string]any) error {
-	result := x.safeGet("Assembler/Assemble", map[string]string{
-		"addr":        req.Addr,
-		"instruction": req.Instruction,
+func (x *X64DbgRPC) AssemblerAssemble(Addr, Instruction string) bool {
+	return safeGet[bool]("Assembler/Assemble", map[string]string{
+		"addr":        Addr,
+		"instruction": Instruction,
 	})
-
-	switch v := result.(type) {
-	case map[string]any:
-		*res = v
-	case string:
-		var data map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err != nil {
-			*res = map[string]any{"error": "Failed to parse assembly result", "raw": v}
-			return nil
-		}
-		*res = data
-	default:
-		*res = map[string]any{"error": "Unexpected response format", "raw": result}
-	}
-	return nil
 }
 
-func (x *X64DbgRPC) AssemblerAssembleMem(req struct{ Addr, Instruction string }, res *string) error {
-	result := x.safeGet("Assembler/AssembleMem", map[string]string{
-		"addr":        req.Addr,
-		"instruction": req.Instruction,
+func (x *X64DbgRPC) AssemblerAssembleMem(Addr, Instruction string) bool {
+	return safeGet[bool]("Assembler/AssembleMem", map[string]string{
+		"addr":        Addr,
+		"instruction": Instruction,
 	})
-	*res = fmt.Sprintf("%v", result)
-	return nil
 }
 
 // =============================================================================
 // STACK API
 // =============================================================================
 
-func (x *X64DbgRPC) StackPop(_ struct{}, res *string) error {
-	result := x.safeGet("Stack/Pop", nil)
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) StackPop() bool {
+	return safeGet[bool]("Stack/Pop", nil)
 }
 
-func (x *X64DbgRPC) StackPush(req struct{ Value string }, res *string) error {
-	result := x.safeGet("Stack/Push", map[string]string{"value": req.Value})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) StackPush(Value string) bool {
+	return safeGet[bool]("Stack/Push", map[string]string{"value": Value})
 }
 
-func (x *X64DbgRPC) StackPeek(req struct{ Offset string }, res *string) error {
-	result := x.safeGet("Stack/Peek", map[string]string{"offset": req.Offset})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) StackPeek(Offset string) bool {
+	return safeGet[bool]("Stack/Peek", map[string]string{"offset": Offset})
 }
 
 // =============================================================================
 // FLAG API
 // =============================================================================
 
-func (x *X64DbgRPC) FlagGet(req struct{ Flag string }, res *bool) error {
-	result := x.safeGet("Flag/Get", map[string]string{"flag": req.Flag})
-	if str, ok := result.(string); ok {
-		*res = strings.EqualFold(str, "true")
-		return nil
-	}
-	*res = false
-	return nil
+func (x *X64DbgRPC) FlagGet(Flag string) bool {
+	return safeGet[bool]("Flag/Get", map[string]string{"flag": Flag})
 }
 
-func (x *X64DbgRPC) FlagSet(req struct {
-	Flag  string
-	Value bool
-}, res *string) error {
+func (x *X64DbgRPC) FlagSet(Flag string, Value bool) bool {
 	value := "false"
-	if req.Value {
+	if Value {
 		value = "true"
 	}
-	result := x.safeGet("Flag/Set", map[string]string{"flag": req.Flag, "value": value})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+	return safeGet[bool]("Flag/Set", map[string]string{"flag": Flag, "value": value})
 }
 
 // =============================================================================
 // PATTERN API
 // =============================================================================
 
-func (x *X64DbgRPC) PatternFindMem(req struct{ Start, Size, Pattern string }, res *string) error {
-	result := x.safeGet("Pattern/FindMem", map[string]string{
-		"start":   req.Start,
-		"size":    req.Size,
-		"pattern": req.Pattern,
+func (x *X64DbgRPC) PatternFindMem(Start, Size, Pattern string) bool {
+	return safeGet[bool]("Pattern/FindMem", map[string]string{
+		"start":   Start,
+		"size":    Size,
+		"pattern": Pattern,
 	})
-	*res = fmt.Sprintf("%v", result)
-	return nil
 }
 
 // =============================================================================
 // MISC API
 // =============================================================================
 
-func (x *X64DbgRPC) MiscParseExpression(req struct{ Expression string }, res *string) error {
-	result := x.safeGet("Misc/ParseExpression", map[string]string{"expression": req.Expression})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MiscParseExpression(Expression string) bool {
+	return safeGet[bool]("Misc/ParseExpression", map[string]string{"expression": Expression})
 }
 
-func (x *X64DbgRPC) MiscRemoteGetProcAddress(req struct{ Module, API string }, res *string) error {
-	result := x.safeGet("Misc/RemoteGetProcAddress", map[string]string{"module": req.Module, "api": req.API})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MiscRemoteGetProcAddress(Module, API string) bool {
+	return safeGet[bool]("Misc/RemoteGetProcAddress", map[string]string{"module": Module, "api": API})
 }
 
 // =============================================================================
 // LEGACY COMPATIBILITY FUNCTIONS
 // =============================================================================
 
-func (x *X64DbgRPC) SetRegister(req struct{ Name, Value string }, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "r " + req.Name + "=" + req.Value}, res)
-	return result
+func (x *X64DbgRPC) SetRegister(Name, Value string) bool {
+	return x.ExecCommand("r " + Name + "=" + Value)
 }
 
-func (x *X64DbgRPC) MemRead(req struct{ Addr, Size string }, res *string) error {
-	result := x.safeGet("MemRead", map[string]string{"addr": req.Addr, "size": req.Size})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MemRead(Addr, Size string) bool {
+	return safeGet[bool]("MemRead", map[string]string{"addr": Addr, "size": Size})
 }
 
-func (x *X64DbgRPC) MemWrite(req struct{ Addr, Data string }, res *string) error {
-	result := x.safeGet("MemWrite", map[string]string{"addr": req.Addr, "data": req.Data})
-	*res = fmt.Sprintf("%v", result)
-	return nil
+func (x *X64DbgRPC) MemWrite(Addr, Data string) bool {
+	return safeGet[bool]("MemWrite", map[string]string{"addr": Addr, "data": Data})
 }
 
-func (x *X64DbgRPC) SetBreakpoint(req struct{ Addr string }, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "bp " + req.Addr}, res)
-	return result
+func (x *X64DbgRPC) SetBreakpoint(Addr string) bool {
+	return x.ExecCommand("bp " + Addr)
 }
 
-func (x *X64DbgRPC) DeleteBreakpoint(req struct{ Addr string }, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "bpc " + req.Addr}, res)
-	return result
+func (x *X64DbgRPC) DeleteBreakpoint(Addr string) bool {
+	return x.ExecCommand("bpc " + Addr)
 }
 
-func (x *X64DbgRPC) Run(_ struct{}, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "run"}, res)
-	return result
+func (x *X64DbgRPC) Run() bool {
+	return x.ExecCommand("run")
 }
 
-func (x *X64DbgRPC) Pause(_ struct{}, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "pause"}, res)
-	return result
+func (x *X64DbgRPC) Pause() bool {
+	return x.ExecCommand("pause")
 }
 
-func (x *X64DbgRPC) StepIn(_ struct{}, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "sti"}, res)
-	return result
+func (x *X64DbgRPC) StepIn() bool {
+	return x.ExecCommand("sti")
 }
 
-func (x *X64DbgRPC) StepOver(_ struct{}, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "sto"}, res)
-	return result
+func (x *X64DbgRPC) StepOver() bool {
+	return x.ExecCommand("sto")
 }
 
-func (x *X64DbgRPC) StepOut(_ struct{}, res *string) error {
-	result := x.ExecCommand(struct{ Cmd string }{Cmd: "rtr"}, res)
-	return result
+func (x *X64DbgRPC) StepOut() bool {
+	return x.ExecCommand("rtr")
 }
 
-func (x *X64DbgRPC) GetCallStack(_ struct{}, res *[]map[string]any) error {
-	var result string
-	if err := x.ExecCommand(struct{ Cmd string }{Cmd: "k"}, &result); err != nil {
-		return err
-	}
-
-	stack := []map[string]any{
-		{"info": "Call stack information requested via command", "result": result},
-	}
-
-	*res = stack
-	return nil
+func (x *X64DbgRPC) GetCallStack() {
+	//var result string
+	//if err := x.ExecCommand(struct{ Cmd string }{Cmd: "k"}, &result); err != nil {
+	//	return err
+	//}
+	//
+	//stack := []map[string]any{
+	//	{"info": "Call stack information requested via command", "result": result},
+	//}
+	//
+	//return nil
 }
 
-func (x *X64DbgRPC) Disassemble(req struct{ Addr string }, res *map[string]any) error {
-	var result string
-	if err := x.ExecCommand(struct{ Cmd string }{Cmd: "dis " + req.Addr}, &result); err != nil {
-		return err
-	}
-
-	*res = map[string]any{
-		"addr":           req.Addr,
-		"command_result": result,
-	}
-	return nil
+func (x *X64DbgRPC) Disassemble(Addr string) {
+	//var result string
+	//if err := x.ExecCommand(struct{ Cmd string }{Cmd: "dis " + Addr}, &result); err != nil {
+	//	return err
+	//}
+	//
+	//*res = map[string]any{
+	//	"addr":           Addr,
+	//	"command_result": result,
+	//}
+	//return nil
 }
 
-func (x *X64DbgRPC) DisasmGetInstruction(req struct{ Addr string }, res *map[string]any) error {
-	result := x.safeGet("Disasm/GetInstruction", map[string]string{"addr": req.Addr})
-
-	switch v := result.(type) {
-	case map[string]any:
-		*res = v
-	case string:
-		var data map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err != nil {
-			*res = map[string]any{"error": "Failed to parse disassembly result", "raw": v}
-			return nil
-		}
-		*res = data
-	default:
-		*res = map[string]any{"error": "Unexpected response format", "raw": result}
-	}
-	return nil
+func (x *X64DbgRPC) DisasmGetInstruction(Addr string) bool {
+	return safeGet[bool]("Disasm/GetInstruction", map[string]string{"addr": Addr})
 }
 
-func (x *X64DbgRPC) DisasmGetInstructionRange(req struct {
-	Addr  string
-	Count int
-}, res *[]map[string]any) error {
-	result := x.safeGet("Disasm/GetInstructionRange", map[string]string{
-		"addr":  req.Addr,
-		"count": strconv.Itoa(req.Count),
+func (x *X64DbgRPC) DisasmGetInstructionRange(Addr string, Count int) bool {
+	return safeGet[bool]("Disasm/GetInstructionRange", map[string]string{
+		"addr":  Addr,
+		"count": strconv.Itoa(Count),
 	})
-
-	switch v := result.(type) {
-	case []map[string]any:
-		*res = v
-	case string:
-		var data []map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err != nil {
-			*res = []map[string]any{{"error": "Failed to parse disassembly result", "raw": v}}
-			return nil
-		}
-		*res = data
-	default:
-		*res = []map[string]any{{"error": "Unexpected response format"}}
-	}
-	return nil
 }
 
-func (x *X64DbgRPC) DisasmGetInstructionAtRIP(_ struct{}, res *map[string]any) error {
-	result := x.safeGet("Disasm/GetInstructionAtRIP", nil)
-
-	switch v := result.(type) {
-	case map[string]any:
-		*res = v
-	case string:
-		var data map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err != nil {
-			*res = map[string]any{"error": "Failed to parse disassembly result", "raw": v}
-			return nil
-		}
-		*res = data
-	default:
-		*res = map[string]any{"error": "Unexpected response format"}
-	}
-	return nil
+func (x *X64DbgRPC) DisasmGetInstructionAtRIP() bool {
+	return safeGet[bool]("Disasm/GetInstructionAtRIP", nil)
 }
 
-func (x *X64DbgRPC) StepInWithDisasm(_ struct{}, res *map[string]any) error {
-	result := x.safeGet("Disasm/StepInWithDisasm", nil)
-
-	switch v := result.(type) {
-	case map[string]any:
-		*res = v
-	case string:
-		var data map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err != nil {
-			*res = map[string]any{"error": "Failed to parse step result", "raw": v}
-			return nil
-		}
-		*res = data
-	default:
-		*res = map[string]any{"error": "Unexpected response format"}
-	}
-	return nil
+func (x *X64DbgRPC) StepInWithDisasm() bool {
+	return safeGet[bool]("Disasm/StepInWithDisasm", nil)
 }
 
-func (x *X64DbgRPC) GetModuleList(_ struct{}, res *[]map[string]any) error {
-	result := x.safeGet("GetModuleList", nil)
-
-	switch v := result.(type) {
-	case []map[string]any:
-		*res = v
-	case string:
-		var data []map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err != nil {
-			*res = []map[string]any{{"error": "Failed to parse module list", "raw": v}}
-			return nil
-		}
-		*res = data
-	default:
-		*res = []map[string]any{{"error": "Unexpected response format"}}
-	}
-	return nil
+func (x *X64DbgRPC) GetModuleList() bool {
+	return safeGet[bool]("GetModuleList", nil)
 }
 
-func (x *X64DbgRPC) MemoryBase(req struct{ Addr string }, res *map[string]any) error {
-	result := x.safeGet("MemoryBase", map[string]string{"addr": req.Addr})
+func (x *X64DbgRPC) MemoryBase(Addr string) bool {
+	return safeGet[bool]("MemoryBase", map[string]string{"addr": Addr})
 
-	switch v := result.(type) {
-	case map[string]any:
-		*res = v
-	case string:
-		// 尝试解析逗号分隔的响应
-		if strings.Contains(v, ",") {
-			parts := strings.Split(v, ",")
-			if len(parts) == 2 {
-				*res = map[string]any{
-					"base_address": strings.TrimSpace(parts[0]),
-					"size":         strings.TrimSpace(parts[1]),
-				}
-				return nil
-			}
-		}
-
-		// 尝试解析 JSON
-		var data map[string]any
-		if err := json.Unmarshal([]byte(v), &data); err == nil {
-			*res = data
-			return nil
-		}
-
-		// 默认返回原始响应
-		*res = map[string]any{"raw_response": v}
-	default:
-		*res = map[string]any{"error": "Unexpected response format"}
-	}
-	return nil
+	//switch v := result.(type) {
+	//case map[string]any:
+	//	*res = v
+	//case string:
+	//	// 尝试解析逗号分隔的响应
+	//	if strings.Contains(v, ",") {
+	//		parts := strings.Split(v, ",")
+	//		if len(parts) == 2 {
+	//			*res = map[string]any{
+	//				"base_address": strings.TrimSpace(parts[0]),
+	//				"size":         strings.TrimSpace(parts[1]),
+	//			}
+	//			return nil
+	//		}
+	//	}
+	//
+	//	// 尝试解析 JSON
+	//	var data map[string]any
+	//	if err := json.Unmarshal([]byte(v), &data); err == nil {
+	//		*res = data
+	//		return nil
+	//	}
+	//
+	//default:
+	//}
 }
 
 func main() {
+	d := NewX64DbgRPC()
+	d.ExecCommand("restartadmin")
+
+	return
 	// 解析命令行参数
 	serverPtr := flag.String("server", "", "x64dbg server URL")
 	portPtr := flag.String("port", "8889", "RPC server port")
@@ -609,7 +428,7 @@ func main() {
 	}
 
 	// 初始化RPC服务
-	rpcServer := NewX64DbgRPC()
+	rpcServer := d
 	mylog.Check(rpc.Register(rpcServer))
 	rpc.HandleHTTP()
 
