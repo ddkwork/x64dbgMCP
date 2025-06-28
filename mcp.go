@@ -176,9 +176,9 @@ type moduleExport struct {
 }
 
 type moduleImport struct {
-	IatRva          uint `json:"iat_rva"`
-	IatVa           uint `json:"iat_va"`
-	Ordinal         uint `json:"ordinal"`
+	IatRva          HexInt `json:"iat_rva"`
+	IatVa           HexInt `json:"iat_va"`
+	Ordinal         HexInt `json:"ordinal"`
 	Name            string
 	UndecoratedName string
 }
