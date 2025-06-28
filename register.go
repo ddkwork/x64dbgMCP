@@ -909,22 +909,22 @@ var client = &http.Client{
 //	}
 type Type interface {
 	cmp.Ordered |
-	bool |
-	[]byte |
-	moduleInfo |
-	[]moduleInfo |
-	moduleSectionInfo |
-	[]moduleSectionInfo |
-	moduleExport |
-	[]moduleExport |
-	moduleImport |
-	[]moduleImport |
-	memoryBase |
-	disassemblerAddress |
-	disassembleRip |
-	disassembleRipWithSetupIn |
-	assemblerResult |
-	void
+		bool |
+		[]byte |
+		moduleInfo |
+		[]moduleInfo |
+		moduleSectionInfo |
+		[]moduleSectionInfo |
+		moduleExport |
+		[]moduleExport |
+		moduleImport |
+		[]moduleImport |
+		memoryBase |
+		disassemblerAddress |
+		disassembleRip |
+		disassembleRipWithSetupIn |
+		assemblerResult |
+		void
 }
 
 func request[T Type](endpoint string, params map[string]string) T {
