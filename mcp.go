@@ -61,9 +61,9 @@ func (debug) DeleteBreakpoint(address int) bool {
 }
 
 type assemblerResult struct {
-	Status string `json:"success"`
-	Size   int    `json:"size"`
-	Data   []byte `json:"bytes"`
+	Status string   `json:"success"`
+	Size   int      `json:"size"`
+	Data   HexBytes `json:"bytes"`
 }
 
 func (assembler) Assemble(address int, instruction string) assemblerResult {
@@ -102,20 +102,20 @@ func (disassembler) AtRipFromStepIn() disassembleRipWithSetupIn {
 }
 
 type disassemblerAddress struct {
-	Address     int    `json:"address"`
+	Address     HexInt `json:"address"`
 	Instruction string `json:"instruction"`
-	Size        string `json:"size"`
+	Size        int    `json:"size"`
 }
 type disassembleRip struct {
-	Rip         int    `json:"rip"`
+	Rip         HexInt `json:"rip"`
 	Instruction string `json:"instruction"`
-	Size        string `json:"size"`
+	Size        int    `json:"size"`
 }
 type disassembleRipWithSetupIn struct {
 	StepResult  string `json:"step_result"`
-	Rip         int    `json:"rip"`
+	Rip         HexInt `json:"rip"`
 	Instruction string `json:"instruction"`
-	Size        string `json:"size"`
+	Size        int    `json:"size"`
 }
 
 // Get flag: Flag name (ZF, OF, CF, PF, SF, TF, AF, DF, IF)
@@ -142,8 +142,8 @@ func (misc) GetApiAddressFromModule(module string, api string) (address uint) {
 }
 
 type memoryBase struct {
-	BaseAddress uint `json:"base_address"`
-	Size        uint `json:"size"`
+	BaseAddress HexInt `json:"base_address"`
+	Size        uint   `json:"size"`
 }
 
 func (memory) FindBaseByAddress(address int) memoryBase {
@@ -151,25 +151,25 @@ func (memory) FindBaseByAddress(address int) memoryBase {
 }
 
 type moduleInfo struct {
-	BaseAddress  uint `json:"base_address"`
-	Size         uint `json:"size"`
-	Entry        uint `json:"entry"`
-	SectionCount int  `json:"section_count"`
+	BaseAddress  HexInt `json:"base_address"`
+	Size         uint   `json:"size"`
+	Entry        HexInt `json:"entry"`
+	SectionCount int    `json:"section_count"`
 	Name         string
 	Path         string
 }
 
 type moduleSectionInfo struct {
-	Address uint `json:"address"`
-	Size    uint `json:"size"`
+	Address HexInt `json:"address"`
+	Size    uint   `json:"size"`
 	Name    string
 }
 
 type moduleExport struct {
-	Ordinal         uint `json:"ordinal"`
-	Rva             uint `json:"rva"`
-	Va              uint `json:"va"`
-	Forwarded       bool `json:"forwarded"`
+	Ordinal         HexInt `json:"ordinal"`
+	Rva             HexInt `json:"rva"`
+	Va              HexInt `json:"va"`
+	Forwarded       bool   `json:"forwarded"`
 	ForwardName     string
 	Name            string
 	UndecoratedName string
