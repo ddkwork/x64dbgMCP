@@ -91,7 +91,7 @@ func TestGenRegister(t *testing.T) {
 	g.AddImport("github.com/ddkwork/golibrary/std/mylog")
 	g.P(common)
 	g.P(enum)
-	g.InsertPackageWithImports("pkg")
+	g.InsertPackageWithImports("main")
 	stream.WriteGoFile("register.go", g.String())
 
 }
