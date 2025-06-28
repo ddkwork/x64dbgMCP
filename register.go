@@ -927,7 +927,7 @@ type Type interface {
 	void
 }
 
-func request[T any](endpoint string, params map[string]string) T {
+func request[T Type](endpoint string, params map[string]string) T {
 	x64dbgServerURL := DefaultX64dbgServer
 	url := x64dbgServerURL + endpoint
 
