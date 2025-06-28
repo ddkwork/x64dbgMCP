@@ -1,0 +1,944 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"net/url"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/modelcontextprotocol/go-sdk/mcp"
+)
+
+const DEFAULT_X64DBG_SERVER = "http://127.0.0.1:8888/"
+
+var x64dbgServerURL string
+
+func init() {
+	if len(os.Args) > 1 {
+		x64dbgServerURL = os.Args[1]
+	} else {
+		x64dbgServerURL = DEFAULT_X64DBG_SERVER
+	}
+}
+
+// safeGet 执行 GET 请求并返回结果
+func safeGet(endpoint string, params map[string]string) (interface{}, error) {
+	fullURL := x64dbgServerURL + endpoint
+	if len(params) > 0 {
+		query := url.Values{}
+		for k, v := range params {
+			query.Add(k, v)
+		}
+		fullURL += "?" + query.Encode()
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	resp, err := client.Get(fullURL)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Sprintf("Error %d: %s", resp.StatusCode, resp.Status), nil
+	}
+
+	var result interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		return result, nil
+	}
+
+	//buf := new(strings.Builder)
+	buf := bytes.NewBuffer(nil)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response failed: %w", err)
+	}
+
+	return strings.TrimSpace(buf.String()), nil
+}
+
+// safePost 执行 POST 请求并返回结果
+func safePost(endpoint string, data interface{}) (interface{}, error) {
+	fullURL := x64dbgServerURL + endpoint
+
+	var reqBody []byte
+	switch d := data.(type) {
+	case string:
+		reqBody = []byte(d)
+	default:
+		var err error
+		reqBody, err = json.Marshal(data)
+		if err != nil {
+			return nil, fmt.Errorf("marshal data failed: %w", err)
+		}
+	}
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Post(fullURL, "application/json", strings.NewReader(string(reqBody)))
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Sprintf("Error %d: %s", resp.StatusCode, resp.Status), nil
+	}
+
+	var result interface{}
+	if err := json.NewDecoder(resp.Body).Decode(&result); err == nil {
+		return result, nil
+	}
+
+	buf := new(bytes.Buffer)
+	_, err = buf.ReadFrom(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("read response failed: %w", err)
+	}
+
+	return strings.TrimSpace(buf.String()), nil
+}
+
+// =============================================================================
+// 工具函数实现
+// =============================================================================
+
+type ExecCommandParams struct {
+	Cmd string `json:"cmd"`
+}
+
+func ExecCommand(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[ExecCommandParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("ExecCommand", map[string]string{"cmd": params.Arguments.Cmd})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type IsDebugActiveParams struct{}
+
+func IsDebugActive(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[IsDebugActiveParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("IsDebugActive", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if s, ok := result.(string); ok {
+		return &mcp.CallToolResultFor[any]{Output: strings.ToLower(s) == "true"}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type IsDebuggingParams struct{}
+
+func IsDebugging(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[IsDebuggingParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Is_Debugging", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if s, ok := result.(string); ok {
+		return &mcp.CallToolResultFor[any]{Output: strings.ToLower(s) == "true"}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type RegisterGetParams struct {
+	Register string `json:"register"`
+}
+
+func RegisterGet(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[RegisterGetParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Register/Get", map[string]string{"register": params.Arguments.Register})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type RegisterSetParams struct {
+	Register string `json:"register"`
+	Value    string `json:"value"`
+}
+
+func RegisterSet(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[RegisterSetParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Register/Set", map[string]string{
+		"register": params.Arguments.Register,
+		"value":    params.Arguments.Value,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MemoryReadParams struct {
+	Addr string `json:"addr"`
+	Size string `json:"size"`
+}
+
+func MemoryRead(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemoryReadParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Memory/Read", map[string]string{
+		"addr": params.Arguments.Addr,
+		"size": params.Arguments.Size,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MemoryWriteParams struct {
+	Addr string `json:"addr"`
+	Data string `json:"data"`
+}
+
+func MemoryWrite(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemoryWriteParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Memory/Write", map[string]string{
+		"addr": params.Arguments.Addr,
+		"data": params.Arguments.Data,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MemoryIsValidPtrParams struct {
+	Addr string `json:"addr"`
+}
+
+func MemoryIsValidPtr(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemoryIsValidPtrParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Memory/IsValidPtr", map[string]string{"addr": params.Arguments.Addr})
+	if err != nil {
+		return nil, err
+	}
+
+	if s, ok := result.(string); ok {
+		return &mcp.CallToolResultFor[any]{Output: strings.ToLower(s) == "true"}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MemoryGetProtectParams struct {
+	Addr string `json:"addr"`
+}
+
+func MemoryGetProtect(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemoryGetProtectParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Memory/GetProtect", map[string]string{"addr": params.Arguments.Addr})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugRunParams struct{}
+
+func DebugRun(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugRunParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/Run", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugPauseParams struct{}
+
+func DebugPause(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugPauseParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/Pause", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugStopParams struct{}
+
+func DebugStop(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugStopParams]) (*mcp.CailToolResultFor[any], error) {
+	result, err := safeGet("Debug/Stop", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugStepInParams struct{}
+
+func DebugStepIn(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugStepInParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/StepIn", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugStepOverParams struct{}
+
+func DebugStepOver(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugStepOverParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/StepOver", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugStepOutParams struct{}
+
+func DebugStepOut(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugStepOutParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/StepOut", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugSetBreakpointParams struct {
+	Addr string `json:"addr"`
+}
+
+func DebugSetBreakpoint(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugSetBreakpointParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/SetBreakpoint", map[string]string{"addr": params.Arguments.Addr})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type DebugDeleteBreakpointParams struct {
+	Addr string `json:"addr"`
+}
+
+func DebugDeleteBreakpoint(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DebugDeleteBreakpointParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Debug/DeleteBreakpoint", map[string]string{"addr": params.Arguments.Addr})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type AssemblerAssembleParams struct {
+	Addr        string `json:"addr"`
+	Instruction string `json:"instruction"`
+}
+
+func AssemblerAssemble(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[AssemblerAssembleParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Assembler/Assemble", map[string]string{
+		"addr":        params.Arguments.Addr,
+		"instruction": params.Arguments.Instruction,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// 尝试解析为JSON
+	if _, ok := result.(map[string]interface{}); ok {
+		return &mcp.CallToolResultFor[any]{Output: result}, nil
+	}
+
+	// 如果是字符串，尝试解析
+	if s, ok := result.(string); ok {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+		return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+			"error": "Failed to parse assembly result",
+			"raw":   s,
+		}}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+		"error": "Unexpected response format",
+	}}, nil
+}
+
+type AssemblerAssembleMemParams struct {
+	Addr        string `json:"addr"`
+	Instruction string `json:"instruction"`
+}
+
+func AssemblerAssembleMem(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[AssemblerAssembleMemParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Assembler/AssembleMem", map[string]string{
+		"addr":        params.Arguments.Addr,
+		"instruction": params.Arguments.Instruction,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type StackPopParams struct{}
+
+func StackPop(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StackPopParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Stack/Pop", nil)
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type StackPushParams struct {
+	Value string `json:"value"`
+}
+
+func StackPush(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StackPushParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Stack/Push", map[string]string{"value": params.Arguments.Value})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type StackPeekParams struct {
+	Offset string `json:"offset"`
+}
+
+func StackPeek(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StackPeekParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Stack/Peek", map[string]string{"offset": params.Arguments.Offset})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type FlagGetParams struct {
+	Flag string `json:"flag"`
+}
+
+func FlagGet(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[FlagGetParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Flag/Get", map[string]string{"flag": params.Arguments.Flag})
+	if err != nil {
+		return nil, err
+	}
+
+	if s, ok := result.(string); ok {
+		return &mcp.CallToolResultFor[any]{Output: strings.ToLower(s) == "true"}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type FlagSetParams struct {
+	Flag  string `json:"flag"`
+	Value bool   `json:"value"`
+}
+
+func FlagSet(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[FlagSetParams]) (*mcp.CallToolResultFor[any], error) {
+	valueStr := "false"
+	if params.Arguments.Value {
+		valueStr = "true"
+	}
+
+	result, err := safeGet("Flag/Set", map[string]string{
+		"flag":  params.Arguments.Flag,
+		"value": valueStr,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type PatternFindMemParams struct {
+	Start   string `json:"start"`
+	Size    string `json:"size"`
+	Pattern string `json:"pattern"`
+}
+
+func PatternFindMem(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[PatternFindMemParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Pattern/FindMem", map[string]string{
+		"start":   params.Arguments.Start,
+		"size":    params.Arguments.Size,
+		"pattern": params.Arguments.Pattern,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MiscParseExpressionParams struct {
+	Expression string `json:"expression"`
+}
+
+func MiscParseExpression(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MiscParseExpressionParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Misc/ParseExpression", map[string]string{"expression": params.Arguments.Expression})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MiscRemoteGetProcAddressParams struct {
+	Module string `json:"module"`
+	API    string `json:"api"`
+}
+
+func MiscRemoteGetProcAddress(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MiscRemoteGetProcAddressParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Misc/RemoteGetProcAddress", map[string]string{
+		"module": params.Arguments.Module,
+		"api":    params.Arguments.API,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type SetRegisterParams struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+func SetRegister(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[SetRegisterParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{
+		Cmd: fmt.Sprintf("r %s=%s", params.Arguments.Name, params.Arguments.Value),
+	}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type MemReadParams struct {
+	Addr string `json:"addr"`
+	Size string `json:"size"`
+}
+
+func MemRead(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemReadParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("MemRead", map[string]string{
+		"addr": params.Arguments.Addr,
+		"size": params.Arguments.Size,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type MemWriteParams struct {
+	Addr string `json:"addr"`
+	Data string `json:"data"`
+}
+
+func MemWrite(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemWriteParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("MemWrite", map[string]string{
+		"addr": params.Arguments.Addr,
+		"data": params.Arguments.Data,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &mcp.CallToolResultFor[any]{Output: result}, nil
+}
+
+type SetBreakpointParams struct {
+	Addr string `json:"addr"`
+}
+
+func SetBreakpoint(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[SetBreakpointParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{
+		Cmd: fmt.Sprintf("bp %s", params.Arguments.Addr),
+	}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type DeleteBreakpointParams struct {
+	Addr string `json:"addr"`
+}
+
+func DeleteBreakpoint(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DeleteBreakpointParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{
+		Cmd: fmt.Sprintf("bpc %s", params.Arguments.Addr),
+	}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type RunParams struct{}
+
+func Run(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[RunParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{Cmd: "run"}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type PauseParams struct{}
+
+func Pause(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[PauseParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{Cmd: "pause"}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type StepInParams struct{}
+
+func StepIn(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StepInParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{Cmd: "sti"}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type StepOverParams struct{}
+
+func StepOver(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StepOverParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{Cmd: "sto"}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type StepOutParams struct{}
+
+func StepOut(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StepOutParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{Cmd: "rtr"}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: result.Output}, nil
+}
+
+type GetCallStackParams struct{}
+
+func GetCallStack(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[GetCallStackParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{Cmd: "k"}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: []map[string]interface{}{
+		{"info": "Call stack information requested via command", "result": result.Output},
+	}}, nil
+}
+
+type DisassembleParams struct {
+	Addr string `json:"addr"`
+}
+
+func Disassemble(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DisassembleParams]) (*mcp.CallToolResultFor[any], error) {
+	// 调用ExecCommand工具
+	execParams := &mcp.CallToolParamsFor[ExecCommandParams]{Input: ExecCommandParams{
+		Cmd: fmt.Sprintf("dis %s", params.Arguments.Addr),
+	}}
+
+	result, err := ExecCommand(ctx, sess, execParams)
+	if err != nil {
+		return nil, err
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+		"addr":           params.Arguments.Addr,
+		"command_result": result.Output,
+	}}, nil
+}
+
+type DisasmGetInstructionParams struct {
+	Addr string `json:"addr"`
+}
+
+type DisasmGetInstructionParams struct {
+	Addr string `json:"addr"`
+}
+
+func DisasmGetInstruction(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DisasmGetInstructionParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Disasm/GetInstruction", map[string]string{"addr": params.Arguments.Addr})
+	if err != nil {
+		return nil, err
+	}
+
+	if m, ok := result.(map[string]interface{}); ok {
+		return &mcp.CallToolResultFor[any]{Output: m}, nil
+	}
+
+	if s, ok := result.(string); ok {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+		return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+			"error": "Failed to parse disassembly result",
+			"raw":   s,
+		}}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+		"error": "Unexpected response format",
+	}}, nil
+}
+
+type DisasmGetInstructionRangeParams struct {
+	Addr  string `json:"addr"`
+	Count int    `json:"count"`
+}
+
+func DisasmGetInstructionRange(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DisasmGetInstructionRangeParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Disasm/GetInstructionRange", map[string]string{
+		"addr":  params.Arguments.Addr,
+		"count": strconv.Itoa(params.Arguments.Count),
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if slice, ok := result.([]interface{}); ok {
+		return &mcp.CallToolResultFor[any]{Output: slice}, nil
+	}
+
+	if s, ok := result.(string); ok {
+		var data []interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+		return &mcp.CallToolResultFor[any]{Output: []interface{}{map[string]interface{}{
+			"error": "Failed to parse disassembly result",
+			"raw":   s,
+		}}}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: []interface{}{map[string]interface{}{
+		"error": "Unexpected response format",
+	}}}, nil
+}
+
+type DisasmGetInstructionAtRIPParams struct{}
+
+func DisasmGetInstructionAtRIP(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[DisasmGetInstructionAtRIPParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Disasm/GetInstructionAtRIP", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if m, ok := result.(map[string]interface{}); ok {
+		return &mcp.CallToolResultFor[any]{Output: m}, nil
+	}
+
+	if s, ok := result.(string); ok {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+		return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+			"error": "Failed to parse disassembly result",
+			"raw":   s,
+		}}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+		"error": "Unexpected response format",
+	}}, nil
+}
+
+type StepInWithDisasmParams struct{}
+
+func StepInWithDisasm(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[StepInWithDisasmParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("Disasm/StepInWithDisasm", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if m, ok := result.(map[string]interface{}); ok {
+		return &mcp.CallToolResultFor[any]{Output: m}, nil
+	}
+
+	if s, ok := result.(string); ok {
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+		return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+			"error": "Failed to parse step result",
+			"raw":   s,
+		}}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+		"error": "Unexpected response format",
+	}}, nil
+}
+
+type GetModuleListParams struct{}
+
+func GetModuleList(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[GetModuleListParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("GetModuleList", nil)
+	if err != nil {
+		return nil, err
+	}
+
+	if slice, ok := result.([]interface{}); ok {
+		return &mcp.CallToolResultFor[any]{Output: slice}, nil
+	}
+
+	if s, ok := result.(string); ok {
+		var data []interface{}
+		if err := json.Unmarshal([]byte(s), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+		return &mcp.CallToolResultFor[any]{Output: []interface{}{map[string]interface{}{
+			"error": "Failed to parse module list",
+			"raw":   s,
+		}}}, nil
+	}
+
+	return &mcp.CallToolResultFor[any]{Output: []interface{}{map[string]interface{}{
+		"error": "Unexpected response format",
+	}}}, nil
+}
+
+type MemoryBaseParams struct {
+	Addr string `json:"addr"`
+}
+
+func MemoryBase(ctx context.Context, sess *mcp.ServerSession, params *mcp.CallToolParamsFor[MemoryBaseParams]) (*mcp.CallToolResultFor[any], error) {
+	result, err := safeGet("MemoryBase", map[string]string{"addr": params.Arguments.Addr})
+	if err != nil {
+		return nil, err
+	}
+
+	// 尝试处理不同类型的响应
+	switch res := result.(type) {
+	case map[string]interface{}:
+		return &mcp.CallToolResultFor[any]{Output: res}, nil
+	case string:
+		// 尝试解析JSON
+		var data map[string]interface{}
+		if err := json.Unmarshal([]byte(res), &data); err == nil {
+			return &mcp.CallToolResultFor[any]{Output: data}, nil
+		}
+
+		// 尝试解析逗号分隔的字符串
+		if strings.Contains(res, ",") {
+			parts := strings.Split(res, ",")
+			if len(parts) >= 2 {
+				return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+					"base_address": strings.TrimSpace(parts[0]),
+					"size":         strings.TrimSpace(parts[1]),
+				}}, nil
+			}
+		}
+
+		return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+			"raw_response": res,
+		}}, nil
+	default:
+		return &mcp.CallToolResultFor[any]{Output: map[string]interface{}{
+			"error": "Unexpected response format",
+		}}, nil
+	}
+}
+
+func main() {
+	// 创建MCP服务器
+	server := mcp.NewServer("x64dbg-mcp", "v1.0.0", nil)
+
+	// 注册所有工具
+	server.AddTools(
+		mcp.NewServerTool("ExecCommand", "Execute command in x64dbg", ExecCommand, mcp.Input(mcp.Property("cmd", mcp.Description("Command to execute")))),
+		mcp.NewServerTool("IsDebugActive", "Check if debugger is active", IsDebugActive, nil),
+		mcp.NewServerTool("IsDebugging", "Check if debugging a process", IsDebugging, nil),
+		mcp.NewServerTool("RegisterGet", "Get register value", RegisterGet, mcp.Input(mcp.Property("register", mcp.Description("Register name")))),
+		mcp.NewServerTool("RegisterSet", "Set register value", RegisterSet, mcp.Input(mcp.Property("register", mcp.Description("Register name")), mcp.Property("value", mcp.Description("Value to set")))),
+		mcp.NewServerTool("MemoryRead", "Read memory", MemoryRead, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("size", mcp.Description("Bytes to read")))),
+		mcp.NewServerTool("MemoryWrite", "Write memory", MemoryWrite, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("data", mcp.Description("Data to write")))),
+		mcp.NewServerTool("MemoryIsValidPtr", "Check if memory address is valid", MemoryIsValidPtr, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("MemoryGetProtect", "Get memory protection flags", MemoryGetProtect, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("DebugRun", "Resume execution", DebugRun, nil),
+		mcp.NewServerTool("DebugPause", "Pause execution", DebugPause, nil),
+		mcp.NewServerTool("DebugStop", "Stop debugging", DebugStop, nil),
+		mcp.NewServerTool("DebugStepIn", "Step into instruction", DebugStepIn, nil),
+		mcp.NewServerTool("DebugStepOver", "Step over instruction", DebugStepOver, nil),
+		mcp.NewServerTool("DebugStepOut", "Step out of function", DebugStepOut, nil),
+		mcp.NewServerTool("DebugSetBreakpoint", "Set breakpoint", DebugSetBreakpoint, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("DebugDeleteBreakpoint", "Delete breakpoint", DebugDeleteBreakpoint, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("AssemblerAssemble", "Assemble instruction", AssemblerAssemble, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("instruction", mcp.Description("Instruction to assemble")))),
+		mcp.NewServerTool("AssemblerAssembleMem", "Assemble instruction into memory", AssemblerAssembleMem, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("instruction", mcp.Description("Instruction to assemble")))),
+		mcp.NewServerTool("StackPop", "Pop value from stack", StackPop, nil),
+		mcp.NewServerTool("StackPush", "Push value to stack", StackPush, mcp.Input(mcp.Property("value", mcp.Description("Value to push")))),
+		mcp.NewServerTool("StackPeek", "Peek at stack value", StackPeek, mcp.Input(mcp.Property("offset", mcp.Description("Stack offset")))),
+		mcp.NewServerTool("FlagGet", "Get CPU flag value", FlagGet, mcp.Input(mcp.Property("flag", mcp.Description("Flag name")))),
+		mcp.NewServerTool("FlagSet", "Set CPU flag value", FlagSet, mcp.Input(mcp.Property("flag", mcp.Description("Flag name")), mcp.Property("value", mcp.Description("Flag value")))),
+		mcp.NewServerTool("PatternFindMem", "Find pattern in memory", PatternFindMem, mcp.Input(mcp.Property("start", mcp.Description("Start address")), mcp.Property("size", mcp.Description("Size to search")), mcp.Property("pattern", mcp.Description("Pattern to find")))),
+		mcp.NewServerTool("MiscParseExpression", "Parse expression", MiscParseExpression, mcp.Input(mcp.Property("expression", mcp.Description("Expression to parse")))),
+		mcp.NewServerTool("MiscRemoteGetProcAddress", "Get remote procedure address", MiscRemoteGetProcAddress, mcp.Input(mcp.Property("module", mcp.Description("Module name")), mcp.Property("api", mcp.Description("API name")))),
+		mcp.NewServerTool("SetRegister", "Set register (legacy)", SetRegister, mcp.Input(mcp.Property("name", mcp.Description("Register name")), mcp.Property("value", mcp.Description("Value to set")))),
+		mcp.NewServerTool("MemRead", "Read memory (legacy)", MemRead, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("size", mcp.Description("Bytes to read")))),
+		mcp.NewServerTool("MemWrite", "Write memory (legacy)", MemWrite, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("data", mcp.Description("Data to write")))),
+		mcp.NewServerTool("SetBreakpoint", "Set breakpoint (legacy)", SetBreakpoint, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("DeleteBreakpoint", "Delete breakpoint (legacy)", DeleteBreakpoint, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("Run", "Resume execution (legacy)", Run, nil),
+		mcp.NewServerTool("Pause", "Pause execution (legacy)", Pause, nil),
+		mcp.NewServerTool("StepIn", "Step into (legacy)", StepIn, nil),
+		mcp.NewServerTool("StepOver", "Step over (legacy)", StepOver, nil),
+		mcp.NewServerTool("StepOut", "Step out (legacy)", StepOut, nil),
+		mcp.NewServerTool("GetCallStack", "Get call stack (legacy)", GetCallStack, nil),
+		mcp.NewServerTool("Disassemble", "Disassemble (legacy)", Disassemble, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("DisasmGetInstruction", "Get disassembly of instruction", DisasmGetInstruction, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+		mcp.NewServerTool("DisasmGetInstructionRange", "Get range of disassembled instructions", DisasmGetInstructionRange, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")), mcp.Property("count", mcp.Description("Number of instructions")))),
+		mcp.NewServerTool("DisasmGetInstructionAtRIP", "Get instruction at RIP", DisasmGetInstructionAtRIP, nil),
+		mcp.NewServerTool("StepInWithDisasm", "Step in and return disassembly", StepInWithDisasm, nil),
+		mcp.NewServerTool("GetModuleList", "Get list of loaded modules", GetModuleList, nil),
+		mcp.NewServerTool("MemoryBase", "Find module base address", MemoryBase, mcp.Input(mcp.Property("addr", mcp.Description("Memory address")))),
+	)
+
+	// 使用标准输入/输出运行服务器
+	ctx := context.Background()
+	if err := server.Run(ctx, mcp.NewStdioTransport()); err != nil {
+		log.Fatalf("Server failed: %v", err)
+	}
+}
