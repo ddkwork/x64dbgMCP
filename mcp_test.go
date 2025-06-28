@@ -48,8 +48,8 @@ func TestGenRegister(t *testing.T) {
 		}
 
 		if strings.HasPrefix(api, "Set") {
-			//func (m *RegisterManager) SetDR0(v uint) bool {
-			//	return request[bool](tagSetRegister, map[string]string{"register": "DR0", "value": strconv.FormatUint(uint64(v), 16)})
+			//func (m *RegisterManager) SetDR0(v HexInt) bool {
+			//	return request[bool](tagSetRegister, map[string]string{"register": "DR0", "value": strconv.FormatHexInt(HexInt64(v), 16)})
 			//}
 			api = strings.TrimSpace(api)
 			api = strings.TrimPrefix(api, "Set")
@@ -70,7 +70,7 @@ func TestGenRegister(t *testing.T) {
 						strconv.Quote(reg),
 						", ",
 						strconv.Quote("value"),
-						": strconv.FormatUint(uint64(v), 16)})")
+						": strconv.FormatHexInt(HexInt64(v), 16)})")
 
 				}
 			}
@@ -98,181 +98,181 @@ func TestGenRegister(t *testing.T) {
 
 const (
 	apis = ` 
-//Get(reg RegisterEnum) uint
-//Set(reg RegisterEnum, value uint) bool
-//Size() uint
-GetDR0() uint
-SetDR0(v uint) bool
-GetDR1() uint
-SetDR1(v uint) bool
-GetDR2() uint
-SetDR2(v uint) bool
-GetDR3() uint
-SetDR3(v uint) bool
-GetDR6() uint
-SetDR6(v uint) bool
-GetDR7() uint
-SetDR7(v uint) bool
-GetEAX() uint32
-SetEAX(v uint32) bool
-GetAX() uint16
-SetAX(v uint16) bool
-GetAH() uint8
-SetAH(v uint8) bool
-GetAL() uint8
-SetAL(v uint8) bool
-GetEBX() uint32
-SetEBX(v uint32) bool
-GetBX() uint16
-SetBX(v uint16) bool
-GetBH() uint8
-SetBH(v uint8) bool
-GetBL() uint8
-SetBL(v uint8) bool
-GetECX() uint32
-SetECX(v uint32) bool
-GetCX() uint16
-SetCX(v uint16) bool
-GetCH() uint8
-SetCH(v uint8) bool
-GetCL() uint8
-SetCL(v uint8) bool
-GetEDX() uint32
-SetEDX(v uint32) bool
-GetDX() uint16
-SetDX(v uint16) bool
-GetDH() uint8
-SetDH(v uint8) bool
-GetDL() uint8
-SetDL(v uint8) bool
-GetEDI() uint32
-SetEDI(v uint32) bool
-GetDI() uint16
-SetDI(v uint16) bool
-GetESI() uint32
-SetESI(v uint32) bool
-GetSI() uint16
-SetSI(v uint16) bool
-GetEBP() uint32
-SetEBP(v uint32) bool
-GetBP() uint16
-SetBP(v uint16) bool
-GetESP() uint32
-SetESP(v uint32) bool
-GetSP() uint16
-SetSP(v uint16) bool
-GetEIP() uint32
-SetEIP(v uint32) bool
-GetRAX() uint64
-SetRAX(v uint64) bool
-GetRBX() uint64
-SetRBX(v uint64) bool
-GetRCX() uint64
-SetRCX(v uint64) bool
-GetRDX() uint64
-SetRDX(v uint64) bool
-GetRSI() uint64
-SetRSI(v uint64) bool
-GetSIL() uint8
-SetSIL(v uint8) bool
-GetRDI() uint64
-SetRDI(v uint64) bool
-GetDIL() uint8
-SetDIL(v uint8) bool
-GetRBP() uint64
-SetRBP(v uint64) bool
-GetBPL() uint8
-SetBPL(v uint8) bool
-GetRSP() uint64
-SetRSP(v uint64) bool
-GetSPL() uint8
-SetSPL(v uint8) bool
-GetRIP() uint64
-SetRIP(v uint64) bool
-GetR8() uint64
-SetR8(v uint64) bool
-GetR8D() uint32
-SetR8D(v uint32) bool
-GetR8W() uint16
-SetR8W(v uint16) bool
-GetR8B() uint8
-SetR8B(v uint8) bool
-GetR9() uint64
-SetR9(v uint64) bool
-GetR9D() uint32
-SetR9D(v uint32) bool
-GetR9W() uint16
-SetR9W(v uint16) bool
-GetR9B() uint8
-SetR9B(v uint8) bool
-GetR10() uint64
-SetR10(v uint64) bool
-GetR10D() uint32
-SetR10D(v uint32) bool
-GetR10W() uint16
-SetR10W(v uint16) bool
-GetR10B() uint8
-SetR10B(v uint8) bool
-GetR11() uint64
-SetR11(v uint64) bool
-GetR11D() uint32
-SetR11D(v uint32) bool
-GetR11W() uint16
-SetR11W(v uint16) bool
-GetR11B() uint8
-SetR11B(v uint8) bool
-GetR12() uint64
-SetR12(v uint64) bool
-GetR12D() uint32
-SetR12D(v uint32) bool
-GetR12W() uint16
-SetR12W(v uint16) bool
-GetR12B() uint8
-SetR12B(v uint8) bool
-GetR13() uint64
-SetR13(v uint64) bool
-GetR13D() uint32
-SetR13D(v uint32) bool
-GetR13W() uint16
-SetR13W(v uint16) bool
-GetR13B() uint8
-SetR13B(v uint8) bool
-GetR14() uint64
-SetR14(v uint64) bool
-GetR14D() uint32
-SetR14D(v uint32) bool
-GetR14W() uint16
-SetR14W(v uint16) bool
-GetR14B() uint8
-SetR14B(v uint8) bool
-GetR15() uint64
-SetR15(v uint64) bool
-GetR15D() uint32
-SetR15D(v uint32) bool
-GetR15W() uint16
-SetR15W(v uint16) bool
-GetR15B() uint8
-SetR15B(v uint8) bool
-GetCIP() uint
-SetCIP(v uint) bool
-GetCSP() uint
-SetCSP(v uint) bool
-GetCAX() uint
-SetCAX(v uint) bool
-GetCBX() uint
-SetCBX(v uint) bool
-GetCCX() uint
-SetCCX(v uint) bool
-GetCDX() uint
-SetCDX(v uint) bool
-GetCDI() uint
-SetCDI(v uint) bool
-GetCSI() uint
-SetCSI(v uint) bool
-GetCBP() uint
-SetCBP(v uint) bool
-GetCFLAGS() uint
-SetCFLAGS(v uint) bool 
+//Get(reg RegisterEnum) HexInt
+//Set(reg RegisterEnum, value HexInt) bool
+//Size() HexInt
+GetDR0() HexInt
+SetDR0(v HexInt) bool
+GetDR1() HexInt
+SetDR1(v HexInt) bool
+GetDR2() HexInt
+SetDR2(v HexInt) bool
+GetDR3() HexInt
+SetDR3(v HexInt) bool
+GetDR6() HexInt
+SetDR6(v HexInt) bool
+GetDR7() HexInt
+SetDR7(v HexInt) bool
+GetEAX() HexInt32
+SetEAX(v HexInt32) bool
+GetAX() HexInt16
+SetAX(v HexInt16) bool
+GetAH() HexInt8
+SetAH(v HexInt8) bool
+GetAL() HexInt8
+SetAL(v HexInt8) bool
+GetEBX() HexInt32
+SetEBX(v HexInt32) bool
+GetBX() HexInt16
+SetBX(v HexInt16) bool
+GetBH() HexInt8
+SetBH(v HexInt8) bool
+GetBL() HexInt8
+SetBL(v HexInt8) bool
+GetECX() HexInt32
+SetECX(v HexInt32) bool
+GetCX() HexInt16
+SetCX(v HexInt16) bool
+GetCH() HexInt8
+SetCH(v HexInt8) bool
+GetCL() HexInt8
+SetCL(v HexInt8) bool
+GetEDX() HexInt32
+SetEDX(v HexInt32) bool
+GetDX() HexInt16
+SetDX(v HexInt16) bool
+GetDH() HexInt8
+SetDH(v HexInt8) bool
+GetDL() HexInt8
+SetDL(v HexInt8) bool
+GetEDI() HexInt32
+SetEDI(v HexInt32) bool
+GetDI() HexInt16
+SetDI(v HexInt16) bool
+GetESI() HexInt32
+SetESI(v HexInt32) bool
+GetSI() HexInt16
+SetSI(v HexInt16) bool
+GetEBP() HexInt32
+SetEBP(v HexInt32) bool
+GetBP() HexInt16
+SetBP(v HexInt16) bool
+GetESP() HexInt32
+SetESP(v HexInt32) bool
+GetSP() HexInt16
+SetSP(v HexInt16) bool
+GetEIP() HexInt32
+SetEIP(v HexInt32) bool
+GetRAX() HexInt64
+SetRAX(v HexInt64) bool
+GetRBX() HexInt64
+SetRBX(v HexInt64) bool
+GetRCX() HexInt64
+SetRCX(v HexInt64) bool
+GetRDX() HexInt64
+SetRDX(v HexInt64) bool
+GetRSI() HexInt64
+SetRSI(v HexInt64) bool
+GetSIL() HexInt8
+SetSIL(v HexInt8) bool
+GetRDI() HexInt64
+SetRDI(v HexInt64) bool
+GetDIL() HexInt8
+SetDIL(v HexInt8) bool
+GetRBP() HexInt64
+SetRBP(v HexInt64) bool
+GetBPL() HexInt8
+SetBPL(v HexInt8) bool
+GetRSP() HexInt64
+SetRSP(v HexInt64) bool
+GetSPL() HexInt8
+SetSPL(v HexInt8) bool
+GetRIP() HexInt64
+SetRIP(v HexInt64) bool
+GetR8() HexInt64
+SetR8(v HexInt64) bool
+GetR8D() HexInt32
+SetR8D(v HexInt32) bool
+GetR8W() HexInt16
+SetR8W(v HexInt16) bool
+GetR8B() HexInt8
+SetR8B(v HexInt8) bool
+GetR9() HexInt64
+SetR9(v HexInt64) bool
+GetR9D() HexInt32
+SetR9D(v HexInt32) bool
+GetR9W() HexInt16
+SetR9W(v HexInt16) bool
+GetR9B() HexInt8
+SetR9B(v HexInt8) bool
+GetR10() HexInt64
+SetR10(v HexInt64) bool
+GetR10D() HexInt32
+SetR10D(v HexInt32) bool
+GetR10W() HexInt16
+SetR10W(v HexInt16) bool
+GetR10B() HexInt8
+SetR10B(v HexInt8) bool
+GetR11() HexInt64
+SetR11(v HexInt64) bool
+GetR11D() HexInt32
+SetR11D(v HexInt32) bool
+GetR11W() HexInt16
+SetR11W(v HexInt16) bool
+GetR11B() HexInt8
+SetR11B(v HexInt8) bool
+GetR12() HexInt64
+SetR12(v HexInt64) bool
+GetR12D() HexInt32
+SetR12D(v HexInt32) bool
+GetR12W() HexInt16
+SetR12W(v HexInt16) bool
+GetR12B() HexInt8
+SetR12B(v HexInt8) bool
+GetR13() HexInt64
+SetR13(v HexInt64) bool
+GetR13D() HexInt32
+SetR13D(v HexInt32) bool
+GetR13W() HexInt16
+SetR13W(v HexInt16) bool
+GetR13B() HexInt8
+SetR13B(v HexInt8) bool
+GetR14() HexInt64
+SetR14(v HexInt64) bool
+GetR14D() HexInt32
+SetR14D(v HexInt32) bool
+GetR14W() HexInt16
+SetR14W(v HexInt16) bool
+GetR14B() HexInt8
+SetR14B(v HexInt8) bool
+GetR15() HexInt64
+SetR15(v HexInt64) bool
+GetR15D() HexInt32
+SetR15D(v HexInt32) bool
+GetR15W() HexInt16
+SetR15W(v HexInt16) bool
+GetR15B() HexInt8
+SetR15B(v HexInt8) bool
+GetCIP() HexInt
+SetCIP(v HexInt) bool
+GetCSP() HexInt
+SetCSP(v HexInt) bool
+GetCAX() HexInt
+SetCAX(v HexInt) bool
+GetCBX() HexInt
+SetCBX(v HexInt) bool
+GetCCX() HexInt
+SetCCX(v HexInt) bool
+GetCDX() HexInt
+SetCDX(v HexInt) bool
+GetCDI() HexInt
+SetCDI(v HexInt) bool
+GetCSI() HexInt
+SetCSI(v HexInt) bool
+GetCBP() HexInt
+SetCBP(v HexInt) bool
+GetCFLAGS() HexInt
+SetCFLAGS(v HexInt) bool 
 `
 
 	common = `
@@ -288,7 +288,7 @@ var client = &http.Client{
 
 //	Type type Ordered interface {
 //		~int | ~int8 | ~int16 | ~int32 | ~int64 |
-//			~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+//			~HexInt | ~HexInt8 | ~HexInt16 | ~HexInt32 | ~HexInt64 | ~HexIntptr |
 //			~float32 | ~float64 |
 //			~string
 //	}
@@ -309,7 +309,25 @@ type Type interface {
 		disassembleRip |
 		disassembleRipWithSetupIn |
 		assemblerResult |
-		void
+		void|
+HexInt|
+HexInt8|
+HexInt16|
+HexInt32|
+HexInt64|
+HexIntptr|
+float32|	
+float64|
+HexUint|
+HexUint8|
+HexUint16|
+HexUint32|
+HexUint64|
+HexUintptr|
+string|
+HexBytes|
+HexString
+
 }
 
 func request[T Type](endpoint string, params map[string]string) T {
@@ -374,29 +392,29 @@ func request[T Type](endpoint string, params map[string]string) T {
 
 		value := mylog.Check2(strconv.ParseInt(str, base, 64))
 		return any(value).(T)
-	case uint:
+	case HexInt:
 
-		value := mylog.Check2(strconv.ParseUint(str, base, 64))
+		value := mylog.Check2(strconv.ParseHexInt(str, base, 64))
 		return any(value).(T)
-	case uint8:
+	case HexInt8:
 
-		value := mylog.Check2(strconv.ParseUint(str, base, 8))
+		value := mylog.Check2(strconv.ParseHexInt(str, base, 8))
 		return any(value).(T)
-	case uint16:
+	case HexInt16:
 
-		value := mylog.Check2(strconv.ParseUint(str, base, 16))
+		value := mylog.Check2(strconv.ParseHexInt(str, base, 16))
 		return any(value).(T)
-	case uint32:
+	case HexInt32:
 
-		value := mylog.Check2(strconv.ParseUint(str, base, 32))
+		value := mylog.Check2(strconv.ParseHexInt(str, base, 32))
 		return any(value).(T)
-	case uint64:
+	case HexInt64:
 
-		value := mylog.Check2(strconv.ParseUint(str, base, 64))
+		value := mylog.Check2(strconv.ParseHexInt(str, base, 64))
 		return any(value).(T)
-	case uintptr:
+	case HexIntptr:
 
-		value := mylog.Check2(strconv.ParseUint(str, base, 64))
+		value := mylog.Check2(strconv.ParseHexInt(str, base, 64))
 		return any(value).(T)
 	case float32:
 		value := mylog.Check2(strconv.ParseFloat(str, 32))
@@ -552,359 +570,359 @@ const (
 `
 
 	getSet = `
-func (m RegisterManager) Get(reg RegisterEnum) uint {
+func (m RegisterManager) Get(reg RegisterEnum) HexInt {
 	switch reg {
 	case DR0:
-		return uint(m.GetDR0())
+		return HexInt(m.GetDR0())
 	case DR1:
-		return uint(m.GetDR1())
+		return HexInt(m.GetDR1())
 	case DR2:
-		return uint(m.GetDR2())
+		return HexInt(m.GetDR2())
 	case DR3:
-		return uint(m.GetDR3())
+		return HexInt(m.GetDR3())
 	case DR6:
-		return uint(m.GetDR6())
+		return HexInt(m.GetDR6())
 	case DR7:
-		return uint(m.GetDR7())
+		return HexInt(m.GetDR7())
 	case EAX:
-		return uint(m.GetEAX())
+		return HexInt(m.GetEAX())
 	case AX:
-		return uint(m.GetAX())
+		return HexInt(m.GetAX())
 	case AH:
-		return uint(m.GetAH())
+		return HexInt(m.GetAH())
 	case AL:
-		return uint(m.GetAL())
+		return HexInt(m.GetAL())
 	case EBX:
-		return uint(m.GetEBX())
+		return HexInt(m.GetEBX())
 	case BX:
-		return uint(m.GetBX())
+		return HexInt(m.GetBX())
 	case BH:
-		return uint(m.GetBH())
+		return HexInt(m.GetBH())
 	case BL:
-		return uint(m.GetBL())
+		return HexInt(m.GetBL())
 	case ECX:
-		return uint(m.GetECX())
+		return HexInt(m.GetECX())
 	case CX:
-		return uint(m.GetCX())
+		return HexInt(m.GetCX())
 	case CH:
-		return uint(m.GetCH())
+		return HexInt(m.GetCH())
 	case CL:
-		return uint(m.GetCL())
+		return HexInt(m.GetCL())
 	case EDX:
-		return uint(m.GetEDX())
+		return HexInt(m.GetEDX())
 	case DX:
-		return uint(m.GetDX())
+		return HexInt(m.GetDX())
 	case DH:
-		return uint(m.GetDH())
+		return HexInt(m.GetDH())
 	case DL:
-		return uint(m.GetDL())
+		return HexInt(m.GetDL())
 	case EDI:
-		return uint(m.GetEDI())
+		return HexInt(m.GetEDI())
 	case DI:
-		return uint(m.GetDI())
+		return HexInt(m.GetDI())
 	case ESI:
-		return uint(m.GetESI())
+		return HexInt(m.GetESI())
 	case SI:
-		return uint(m.GetSI())
+		return HexInt(m.GetSI())
 	case EBP:
-		return uint(m.GetEBP())
+		return HexInt(m.GetEBP())
 	case BP:
-		return uint(m.GetBP())
+		return HexInt(m.GetBP())
 	case ESP:
-		return uint(m.GetESP())
+		return HexInt(m.GetESP())
 	case SP:
-		return uint(m.GetSP())
+		return HexInt(m.GetSP())
 	case EIP:
-		return uint(m.GetEIP())
+		return HexInt(m.GetEIP())
 	case RAX:
-		return uint(m.GetRAX())
+		return HexInt(m.GetRAX())
 	case RBX:
-		return uint(m.GetRBX())
+		return HexInt(m.GetRBX())
 	case RCX:
-		return uint(m.GetRCX())
+		return HexInt(m.GetRCX())
 	case RDX:
-		return uint(m.GetRDX())
+		return HexInt(m.GetRDX())
 	case RSI:
-		return uint(m.GetRSI())
+		return HexInt(m.GetRSI())
 	case SIL:
-		return uint(m.GetSIL())
+		return HexInt(m.GetSIL())
 	case RDI:
-		return uint(m.GetRDI())
+		return HexInt(m.GetRDI())
 	case DIL:
-		return uint(m.GetDIL())
+		return HexInt(m.GetDIL())
 	case RBP:
-		return uint(m.GetRBP())
+		return HexInt(m.GetRBP())
 	case BPL:
-		return uint(m.GetBPL())
+		return HexInt(m.GetBPL())
 	case RSP:
-		return uint(m.GetRSP())
+		return HexInt(m.GetRSP())
 	case SPL:
-		return uint(m.GetSPL())
+		return HexInt(m.GetSPL())
 	case RIP:
-		return uint(m.GetRIP())
+		return HexInt(m.GetRIP())
 	case R8:
-		return uint(m.GetR8())
+		return HexInt(m.GetR8())
 	case R8D:
-		return uint(m.GetR8D())
+		return HexInt(m.GetR8D())
 	case R8W:
-		return uint(m.GetR8W())
+		return HexInt(m.GetR8W())
 	case R8B:
-		return uint(m.GetR8B())
+		return HexInt(m.GetR8B())
 	case R9:
-		return uint(m.GetR9())
+		return HexInt(m.GetR9())
 	case R9D:
-		return uint(m.GetR9D())
+		return HexInt(m.GetR9D())
 	case R9W:
-		return uint(m.GetR9W())
+		return HexInt(m.GetR9W())
 	case R9B:
-		return uint(m.GetR9B())
+		return HexInt(m.GetR9B())
 	case R10:
-		return uint(m.GetR10())
+		return HexInt(m.GetR10())
 	case R10D:
-		return uint(m.GetR10D())
+		return HexInt(m.GetR10D())
 	case R10W:
-		return uint(m.GetR10W())
+		return HexInt(m.GetR10W())
 	case R10B:
-		return uint(m.GetR10B())
+		return HexInt(m.GetR10B())
 	case R11:
-		return uint(m.GetR11())
+		return HexInt(m.GetR11())
 	case R11D:
-		return uint(m.GetR11D())
+		return HexInt(m.GetR11D())
 	case R11W:
-		return uint(m.GetR11W())
+		return HexInt(m.GetR11W())
 	case R11B:
-		return uint(m.GetR11B())
+		return HexInt(m.GetR11B())
 	case R12:
-		return uint(m.GetR12())
+		return HexInt(m.GetR12())
 	case R12D:
-		return uint(m.GetR12D())
+		return HexInt(m.GetR12D())
 	case R12W:
-		return uint(m.GetR12W())
+		return HexInt(m.GetR12W())
 	case R12B:
-		return uint(m.GetR12B())
+		return HexInt(m.GetR12B())
 	case R13:
-		return uint(m.GetR13())
+		return HexInt(m.GetR13())
 	case R13D:
-		return uint(m.GetR13D())
+		return HexInt(m.GetR13D())
 	case R13W:
-		return uint(m.GetR13W())
+		return HexInt(m.GetR13W())
 	case R13B:
-		return uint(m.GetR13B())
+		return HexInt(m.GetR13B())
 	case R14:
-		return uint(m.GetR14())
+		return HexInt(m.GetR14())
 	case R14D:
-		return uint(m.GetR14D())
+		return HexInt(m.GetR14D())
 	case R14W:
-		return uint(m.GetR14W())
+		return HexInt(m.GetR14W())
 	case R14B:
-		return uint(m.GetR14B())
+		return HexInt(m.GetR14B())
 	case R15:
-		return uint(m.GetR15())
+		return HexInt(m.GetR15())
 	case R15D:
-		return uint(m.GetR15D())
+		return HexInt(m.GetR15D())
 	case R15W:
-		return uint(m.GetR15W())
+		return HexInt(m.GetR15W())
 	case R15B:
-		return uint(m.GetR15B())
+		return HexInt(m.GetR15B())
 	case CIP:
-		return uint(m.GetCIP())
+		return HexInt(m.GetCIP())
 	case CSP:
-		return uint(m.GetCSP())
+		return HexInt(m.GetCSP())
 	case CAX:
-		return uint(m.GetCAX())
+		return HexInt(m.GetCAX())
 	case CBX:
-		return uint(m.GetCBX())
+		return HexInt(m.GetCBX())
 	case CCX:
-		return uint(m.GetCCX())
+		return HexInt(m.GetCCX())
 	case CDX:
-		return uint(m.GetCDX())
+		return HexInt(m.GetCDX())
 	case CDI:
-		return uint(m.GetCDI())
+		return HexInt(m.GetCDI())
 	case CSI:
-		return uint(m.GetCSI())
+		return HexInt(m.GetCSI())
 	case CBP:
-		return uint(m.GetCBP())
+		return HexInt(m.GetCBP())
 	case CFLAGS:
-		return uint(m.GetCFLAGS())
+		return HexInt(m.GetCFLAGS())
 	default:
 		panic("Invalid register enum")
 	}
 }
 
-func (m RegisterManager) Set(reg RegisterEnum, value uint) bool {
+func (m RegisterManager) Set(reg RegisterEnum, value HexInt) bool {
 	switch reg {
 	case DR0:
-		return m.SetDR0(uint(value))
+		return m.SetDR0(HexInt(value))
 	case DR1:
-		return m.SetDR1(uint(value))
+		return m.SetDR1(HexInt(value))
 	case DR2:
-		return m.SetDR2(uint(value))
+		return m.SetDR2(HexInt(value))
 	case DR3:
-		return m.SetDR3(uint(value))
+		return m.SetDR3(HexInt(value))
 	case DR6:
-		return m.SetDR6(uint((value)))
+		return m.SetDR6(HexInt((value)))
 	case DR7:
-		return m.SetDR7(uint(value))
+		return m.SetDR7(HexInt(value))
 	case EAX:
-		return m.SetEAX(uint32(value))
+		return m.SetEAX(HexInt32(value))
 	case AX:
-		return m.SetAX(uint16(value))
+		return m.SetAX(HexInt16(value))
 	case AH:
-		return m.SetAH(uint8(value))
+		return m.SetAH(HexInt8(value))
 	case AL:
-		return m.SetAL(uint8(value))
+		return m.SetAL(HexInt8(value))
 	case EBX:
-		return m.SetEBX(uint32(value))
+		return m.SetEBX(HexInt32(value))
 	case BX:
-		return m.SetBX(uint16(value))
+		return m.SetBX(HexInt16(value))
 	case BH:
-		return m.SetBH(uint8(value))
+		return m.SetBH(HexInt8(value))
 	case BL:
-		return m.SetBL(uint8(value))
+		return m.SetBL(HexInt8(value))
 	case ECX:
-		return m.SetECX(uint32(value))
+		return m.SetECX(HexInt32(value))
 	case CX:
-		return m.SetCX(uint16(value))
+		return m.SetCX(HexInt16(value))
 	case CH:
-		return m.SetCH(uint8(value))
+		return m.SetCH(HexInt8(value))
 	case CL:
-		return m.SetCL(uint8(value))
+		return m.SetCL(HexInt8(value))
 	case EDX:
-		return m.SetEDX(uint32(value))
+		return m.SetEDX(HexInt32(value))
 	case DX:
-		return m.SetDX(uint16(value))
+		return m.SetDX(HexInt16(value))
 	case DH:
-		return m.SetDH(uint8(value))
+		return m.SetDH(HexInt8(value))
 	case DL:
-		return m.SetDL(uint8(value))
+		return m.SetDL(HexInt8(value))
 	case EDI:
-		return m.SetEDI(uint32(value))
+		return m.SetEDI(HexInt32(value))
 	case DI:
-		return m.SetDI(uint16(value))
+		return m.SetDI(HexInt16(value))
 	case ESI:
-		return m.SetESI(uint32(value))
+		return m.SetESI(HexInt32(value))
 	case SI:
-		return m.SetSI(uint16(value))
+		return m.SetSI(HexInt16(value))
 	case EBP:
-		return m.SetEBP(uint32(value))
+		return m.SetEBP(HexInt32(value))
 	case BP:
-		return m.SetBP(uint16(value))
+		return m.SetBP(HexInt16(value))
 	case ESP:
-		return m.SetESP(uint32(value))
+		return m.SetESP(HexInt32(value))
 	case SP:
-		return m.SetSP(uint16(value))
+		return m.SetSP(HexInt16(value))
 	case EIP:
-		return m.SetEIP(uint32(value))
+		return m.SetEIP(HexInt32(value))
 	case RAX:
-		return m.SetRAX(uint64(value))
+		return m.SetRAX(HexInt64(value))
 	case RBX:
-		return m.SetRBX(uint64(value))
+		return m.SetRBX(HexInt64(value))
 	case RCX:
-		return m.SetRCX(uint64(value))
+		return m.SetRCX(HexInt64(value))
 	case RDX:
-		return m.SetRDX(uint64(value))
+		return m.SetRDX(HexInt64(value))
 	case RSI:
-		return m.SetRSI(uint64(value))
+		return m.SetRSI(HexInt64(value))
 	case SIL:
-		return m.SetSIL(uint8(value))
+		return m.SetSIL(HexInt8(value))
 	case RDI:
-		return m.SetRDI(uint64(value))
+		return m.SetRDI(HexInt64(value))
 	case DIL:
-		return m.SetDIL(uint8(value))
+		return m.SetDIL(HexInt8(value))
 	case RBP:
-		return m.SetRBP(uint64(value))
+		return m.SetRBP(HexInt64(value))
 	case BPL:
-		return m.SetBPL(uint8(value))
+		return m.SetBPL(HexInt8(value))
 	case RSP:
-		return m.SetRSP(uint64(value))
+		return m.SetRSP(HexInt64(value))
 	case SPL:
-		return m.SetSPL(uint8(value))
+		return m.SetSPL(HexInt8(value))
 	case RIP:
-		return m.SetRIP(uint64(value))
+		return m.SetRIP(HexInt64(value))
 	case R8:
-		return m.SetR8(uint64(value))
+		return m.SetR8(HexInt64(value))
 	case R8D:
-		return m.SetR8D(uint32(value))
+		return m.SetR8D(HexInt32(value))
 	case R8W:
-		return m.SetR8W(uint16(value))
+		return m.SetR8W(HexInt16(value))
 	case R8B:
-		return m.SetR8B(uint8(value))
+		return m.SetR8B(HexInt8(value))
 	case R9:
-		return m.SetR9(uint64(value))
+		return m.SetR9(HexInt64(value))
 	case R9D:
-		return m.SetR9D(uint32(value))
+		return m.SetR9D(HexInt32(value))
 	case R9W:
-		return m.SetR9W(uint16(value))
+		return m.SetR9W(HexInt16(value))
 	case R9B:
-		return m.SetR9B(uint8(value))
+		return m.SetR9B(HexInt8(value))
 	case R10:
-		return m.SetR10(uint64(value))
+		return m.SetR10(HexInt64(value))
 	case R10D:
-		return m.SetR10D(uint32(value))
+		return m.SetR10D(HexInt32(value))
 	case R10W:
-		return m.SetR10W(uint16(value))
+		return m.SetR10W(HexInt16(value))
 	case R10B:
-		return m.SetR10B(uint8(value))
+		return m.SetR10B(HexInt8(value))
 	case R11:
-		return m.SetR11(uint64(value))
+		return m.SetR11(HexInt64(value))
 	case R11D:
-		return m.SetR11D(uint32(value))
+		return m.SetR11D(HexInt32(value))
 	case R11W:
-		return m.SetR11W(uint16(value))
+		return m.SetR11W(HexInt16(value))
 	case R11B:
-		return m.SetR11B(uint8(value))
+		return m.SetR11B(HexInt8(value))
 	case R12:
-		return m.SetR12(uint64(value))
+		return m.SetR12(HexInt64(value))
 	case R12D:
-		return m.SetR12D(uint32(value))
+		return m.SetR12D(HexInt32(value))
 	case R12W:
-		return m.SetR12W(uint16(value))
+		return m.SetR12W(HexInt16(value))
 	case R12B:
-		return m.SetR12B(uint8(value))
+		return m.SetR12B(HexInt8(value))
 	case R13:
-		return m.SetR13(uint64(value))
+		return m.SetR13(HexInt64(value))
 	case R13D:
-		return m.SetR13D(uint32(value))
+		return m.SetR13D(HexInt32(value))
 	case R13W:
-		return m.SetR13W(uint16(value))
+		return m.SetR13W(HexInt16(value))
 	case R13B:
-		return m.SetR13B(uint8(value))
+		return m.SetR13B(HexInt8(value))
 	case R14:
-		return m.SetR14(uint64(value))
+		return m.SetR14(HexInt64(value))
 	case R14D:
-		return m.SetR14D(uint32(value))
+		return m.SetR14D(HexInt32(value))
 	case R14W:
-		return m.SetR14W(uint16(value))
+		return m.SetR14W(HexInt16(value))
 	case R14B:
-		return m.SetR14B(uint8(value))
+		return m.SetR14B(HexInt8(value))
 	case R15:
-		return m.SetR15(uint64(value))
+		return m.SetR15(HexInt64(value))
 	case R15D:
-		return m.SetR15D(uint32(value))
+		return m.SetR15D(HexInt32(value))
 	case R15W:
-		return m.SetR15W(uint16(value))
+		return m.SetR15W(HexInt16(value))
 	case R15B:
-		return m.SetR15B(uint8(value))
+		return m.SetR15B(HexInt8(value))
 	case CIP:
-		return m.SetCIP(uint(value))
+		return m.SetCIP(HexInt(value))
 	case CSP:
-		return m.SetCSP(uint(value))
+		return m.SetCSP(HexInt(value))
 	case CAX:
-		return m.SetCAX(uint(value))
+		return m.SetCAX(HexInt(value))
 	case CBX:
-		return m.SetCBX(uint(value))
+		return m.SetCBX(HexInt(value))
 	case CCX:
-		return m.SetCCX(uint(value))
+		return m.SetCCX(HexInt(value))
 	case CDX:
-		return m.SetCDX(uint(value))
+		return m.SetCDX(HexInt(value))
 	case CDI:
-		return m.SetCDI(uint(value))
+		return m.SetCDI(HexInt(value))
 	case CSI:
-		return m.SetCSI(uint(value))
+		return m.SetCSI(HexInt(value))
 	case CBP:
-		return m.SetCBP(uint(value))
+		return m.SetCBP(HexInt(value))
 	case CFLAGS:
-		return m.SetCFLAGS(uint(value))
+		return m.SetCFLAGS(HexInt(value))
 	default:
 		panic("Invalid register enum")
 	}
