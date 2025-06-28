@@ -1,4 +1,4 @@
-module x64dbgMCP
+module github.com/ddkwork/x64dbgMCP
 
 go 1.25rc1
 

@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/ddkwork/golibrary/std/mylog"
+	"github.com/ddkwork/golibrary/std/stream"
 )
 
 const DefaultX64dbgServer = "http://127.0.0.1:8888/"
@@ -58,20 +59,24 @@ func request[T any](endpoint string, params map[string]string) T {
 		mylog.Check(fmt.Sprintf("Error %d: %s", resp.StatusCode, string(body)))
 	}
 
-	// 尝试解析为 JSON
+	str := strings.TrimSpace(string(body))
+
 	var jsonData T
+	switch any(jsonData).(type) {
+	case bool:
+		if strings.EqualFold(str, "true") {
+			return any(true).(T)
+		}
+		if strings.EqualFold(str, "false") {
+			return any(false).(T)
+		}
+	}
+
 	if err := json.Unmarshal(body, &jsonData); err == nil {
 		return jsonData
 	}
-	str := strings.TrimSpace(string(body))
-	if strings.EqualFold(str, "true") {
-		return any(true)
-	}
-	if strings.EqualFold(str, "false") {
-		return any(false)
-	}
-	// 返回纯文本
-	return any(str)
+
+	return any(str).(T)
 }
 
 // =============================================================================
@@ -253,6 +258,7 @@ func (x *X64DbgRPC) MemWrite(Addr, Data string) bool {
 }
 
 func (x *X64DbgRPC) SetBreakpoint(Addr string) bool {
+	request[bool]("SetBreakpoint", map[string]string{"addr": Addr})
 	return x.ExecCommand("bp " + Addr)
 }
 
@@ -359,7 +365,68 @@ func (x *X64DbgRPC) MemoryBase(Addr string) bool {
 	//}
 }
 
+type config struct {
+	path   string
+	params map[string]string
+}
+
 func main() {
+	apis := []config{}
+	for s := range stream.ReadFileToLines("x64dbg.py") {
+		s = strings.TrimSpace(s)
+		if strings.HasPrefix(s, "#") && !strings.Contains(s, "=") {
+			println()
+			println(s)
+		}
+		if strings.Contains(s, "safe_get(\"") {
+			_, after, found := strings.Cut(s, "safe_get(")
+			if found {
+				after = strings.TrimSuffix(after, ")")
+				if strings.Contains(after, "{") {
+					before, a, f := strings.Cut(after, "{")
+					if f {
+						before = strings.TrimSuffix(before, ",")
+						before = strings.TrimSpace(before)
+						a = strings.TrimSuffix(a, "}")
+						a = strings.TrimSpace(a)
+
+						params := map[string]string{}
+						hasMore := strings.Contains(a, ",")
+						if hasMore {
+							//"addr": addr, "instruction": instruction
+							all := strings.Split(a, ",")
+							for _, elem := range all {
+								split := strings.Split(elem, ":")
+								split[0] = strings.TrimSpace(split[0])
+								split[1] = strings.TrimSpace(split[1])
+								params[split[0]] = split[1]
+							}
+
+						} else {
+							//"addr": addr
+							split := strings.Split(a, ":")
+							split[0] = strings.TrimSpace(split[0])
+							split[1] = strings.TrimSpace(split[1])
+							params[split[0]] = split[1]
+						}
+						apis = append(apis, config{
+							path:   before,
+							params: params,
+						})
+
+					}
+				} else {
+					apis = append(apis, config{
+						path:   after,
+						params: nil,
+					})
+				}
+				println(after)
+			}
+		}
+	}
+	mylog.Struct(apis)
+	return
 	d := NewX64DbgRPC()
 	d.ExecCommand("restartadmin")
 
