@@ -952,7 +952,7 @@ func request[T any](endpoint string, params map[string]string) T {
 	}
 
 	str := strings.TrimSpace(string(body))
-
+	str = strings.TrimPrefix(str, "0x")
 	var jsonData T
 	switch v := any(jsonData).(type) {
 	case bool:
@@ -965,6 +965,58 @@ func request[T any](endpoint string, params map[string]string) T {
 	case []byte:
 		b := mylog.Check2(hex.DecodeString(str))
 		return any(b).(T)
+	case int:
+
+		value := mylog.Check2(strconv.ParseInt(str, 16, 64))
+		return any(value).(T)
+	case int8:
+
+		value := mylog.Check2(strconv.ParseInt(str, 16, 8))
+		return any(value).(T)
+	case int16:
+
+		value := mylog.Check2(strconv.ParseInt(str, 16, 16))
+		return any(value).(T)
+	case int32:
+
+		value := mylog.Check2(strconv.ParseInt(str, 16, 32))
+		return any(value).(T)
+	case int64:
+
+		value := mylog.Check2(strconv.ParseInt(str, 16, 64))
+		return any(value).(T)
+	case uint:
+
+		value := mylog.Check2(strconv.ParseUint(str, 16, 64))
+		return any(value).(T)
+	case uint8:
+
+		value := mylog.Check2(strconv.ParseUint(str, 16, 8))
+		return any(value).(T)
+	case uint16:
+
+		value := mylog.Check2(strconv.ParseUint(str, 16, 16))
+		return any(value).(T)
+	case uint32:
+
+		value := mylog.Check2(strconv.ParseUint(str, 16, 32))
+		return any(value).(T)
+	case uint64:
+
+		value := mylog.Check2(strconv.ParseUint(str, 16, 64))
+		return any(value).(T)
+	case uintptr:
+
+		value := mylog.Check2(strconv.ParseUint(str, 16, 64))
+		return any(value).(T)
+	case float32:
+		value := mylog.Check2(strconv.ParseFloat(str, 32))
+		return any(value).(T)
+	case float64:
+		value := mylog.Check2(strconv.ParseFloat(str, 64))
+		return any(value).(T)
+	case string:
+		return any(str).(T)
 
 		//todo 处理cpp服务端的字段返回 0x12345678 这种格式，我估计json会解码失败
 	case moduleInfo:
