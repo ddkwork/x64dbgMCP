@@ -952,9 +952,13 @@ func request[T Type](endpoint string, params map[string]string) T {
 	}
 
 	str := strings.TrimSpace(string(body))
+	base := 10
+	if strings.HasPrefix(str, "0x") {
+		base = 16
+	}
 	str = strings.TrimPrefix(str, "0x")
-	var jsonData T
-	switch v := any(jsonData).(type) {
+	var zero T
+	switch v := any(zero).(type) {
 	case bool:
 		if strings.EqualFold(str, "true") {
 			return any(true).(T)
@@ -967,47 +971,47 @@ func request[T Type](endpoint string, params map[string]string) T {
 		return any(b).(T)
 	case int:
 
-		value := mylog.Check2(strconv.ParseInt(str, 16, 64))
+		value := mylog.Check2(strconv.ParseInt(str, base, 64))
 		return any(value).(T)
 	case int8:
 
-		value := mylog.Check2(strconv.ParseInt(str, 16, 8))
+		value := mylog.Check2(strconv.ParseInt(str, base, 8))
 		return any(value).(T)
 	case int16:
 
-		value := mylog.Check2(strconv.ParseInt(str, 16, 16))
+		value := mylog.Check2(strconv.ParseInt(str, base, 16))
 		return any(value).(T)
 	case int32:
 
-		value := mylog.Check2(strconv.ParseInt(str, 16, 32))
+		value := mylog.Check2(strconv.ParseInt(str, base, 32))
 		return any(value).(T)
 	case int64:
 
-		value := mylog.Check2(strconv.ParseInt(str, 16, 64))
+		value := mylog.Check2(strconv.ParseInt(str, base, 64))
 		return any(value).(T)
 	case uint:
 
-		value := mylog.Check2(strconv.ParseUint(str, 16, 64))
+		value := mylog.Check2(strconv.ParseUint(str, base, 64))
 		return any(value).(T)
 	case uint8:
 
-		value := mylog.Check2(strconv.ParseUint(str, 16, 8))
+		value := mylog.Check2(strconv.ParseUint(str, base, 8))
 		return any(value).(T)
 	case uint16:
 
-		value := mylog.Check2(strconv.ParseUint(str, 16, 16))
+		value := mylog.Check2(strconv.ParseUint(str, base, 16))
 		return any(value).(T)
 	case uint32:
 
-		value := mylog.Check2(strconv.ParseUint(str, 16, 32))
+		value := mylog.Check2(strconv.ParseUint(str, base, 32))
 		return any(value).(T)
 	case uint64:
 
-		value := mylog.Check2(strconv.ParseUint(str, 16, 64))
+		value := mylog.Check2(strconv.ParseUint(str, base, 64))
 		return any(value).(T)
 	case uintptr:
 
-		value := mylog.Check2(strconv.ParseUint(str, 16, 64))
+		value := mylog.Check2(strconv.ParseUint(str, base, 64))
 		return any(value).(T)
 	case float32:
 		value := mylog.Check2(strconv.ParseFloat(str, 32))
