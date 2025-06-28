@@ -1,14 +1,17 @@
 package main
 
 import (
+	"cmp"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/ddkwork/golibrary/std/mylog"
 	"io"
 	"net/http"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/ddkwork/golibrary/std/mylog"
 )
 
 type RegisterEnum int
@@ -898,6 +901,32 @@ var client = &http.Client{
 	},
 }
 
+//	Type type Ordered interface {
+//		~int | ~int8 | ~int16 | ~int32 | ~int64 |
+//			~uint | ~uint8 | ~uint16 | ~uint32 | ~uint64 | ~uintptr |
+//			~float32 | ~float64 |
+//			~string
+//	}
+type Type interface {
+	cmp.Ordered |
+	bool |
+	[]byte |
+	moduleInfo |
+	[]moduleInfo |
+	moduleSectionInfo |
+	[]moduleSectionInfo |
+	moduleExport |
+	[]moduleExport |
+	moduleImport |
+	[]moduleImport |
+	memoryBase |
+	disassemblerAddress |
+	disassembleRip |
+	disassembleRipWithSetupIn |
+	assemblerResult |
+	void
+}
+
 func request[T any](endpoint string, params map[string]string) T {
 	x64dbgServerURL := DefaultX64dbgServer
 	url := x64dbgServerURL + endpoint
@@ -925,7 +954,7 @@ func request[T any](endpoint string, params map[string]string) T {
 	str := strings.TrimSpace(string(body))
 
 	var jsonData T
-	switch any(jsonData).(type) {
+	switch v := any(jsonData).(type) {
 	case bool:
 		if strings.EqualFold(str, "true") {
 			return any(true).(T)
@@ -933,13 +962,55 @@ func request[T any](endpoint string, params map[string]string) T {
 		if strings.EqualFold(str, "false") {
 			return any(false).(T)
 		}
-	}
+	case []byte:
+		b := mylog.Check2(hex.DecodeString(str))
+		return any(b).(T)
 
-	if err := json.Unmarshal(body, &jsonData); err == nil {
-		return jsonData
-	}
+		//todo 处理cpp服务端的字段返回 0x12345678 这种格式，我估计json会解码失败
+	case moduleInfo:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case []moduleInfo:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case moduleSectionInfo:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case []moduleSectionInfo:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case moduleExport:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case []moduleExport:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case moduleImport:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case []moduleImport:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case memoryBase:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case disassemblerAddress:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case disassembleRip:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case disassembleRipWithSetupIn:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case assemblerResult:
+		mylog.Check(json.Unmarshal(body, &v))
+		return any(v).(T)
+	case void:
+		return any(nil).(T)
 
-	return any(str).(T)
+	}
+	panic("not support type")
 }
 
 const (
