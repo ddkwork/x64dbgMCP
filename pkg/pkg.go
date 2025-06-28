@@ -29,8 +29,8 @@ func (debug) Debugging() bool {
 	return request[bool]("Is_Debugging", nil)
 }
 
-func (memory) Read(address int) []byte {
-	return request[[]byte]("Memory/Read", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+func (memory) Read(address int, size uint) []byte {
+	return request[[]byte]("Memory/Read", map[string]string{"addr": fmt.Sprintf("0x%x", address), "size": fmt.Sprintf("%d", size)})
 }
 
 func (memory) Write(address int, data []byte) bool {
@@ -83,15 +83,40 @@ func (stack) Peek(offset int) uint {
 	return request[uint]("Stack/Peek", map[string]string{"offset": fmt.Sprintf("0x%x", offset)})
 }
 
-// "Disasm/GetInstruction", {"addr": addr}
-// "Disasm/GetInstructionRange", {"addr": addr, "count": str(count)}
-// "Disasm/GetInstructionAtRIP"
-// "Disasm/StepInWithDisasm"
+type disassembler struct{}
 
-func (misc) DisasmGetInstruction()      {}
-func (misc) DisasmGetInstructionRange() {}
-func (misc) DisasmGetInstructionAtRIP() {}
-func (misc) DisasmStepInWithDisasm()    {}
+func (disassembler) AtAddress(address int) disassemblerAddress {
+	return request[disassemblerAddress]("Disasm/GetInstruction", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+}
+func (disassembler) AtAddressWithSize(address int, size int) []disassemblerAddress {
+	if size < 1 || size > 100 {
+		panic("count should be between 1 and 100 bytes buffer")
+	}
+	return request[[]disassemblerAddress]("Disasm/GetInstructionRange", map[string]string{"addr": fmt.Sprintf("0x%x", address), "count": fmt.Sprintf("%d", size)})
+}
+func (disassembler) AtRip() disassembleRip {
+	return request[disassembleRip]("Disasm/GetInstructionAtRIP", nil)
+}
+func (disassembler) AtRipFromStepIn() disassembleRipWithSetupIn {
+	return request[disassembleRipWithSetupIn]("Disasm/StepInWithDisasm", nil)
+}
+
+type disassemblerAddress struct {
+	Address     int    `json:"address"`
+	Instruction string `json:"instruction"`
+	Size        string `json:"size"`
+}
+type disassembleRip struct {
+	Rip         int    `json:"rip"`
+	Instruction string `json:"instruction"`
+	Size        string `json:"size"`
+}
+type disassembleRipWithSetupIn struct {
+	StepResult  string `json:"step_result"`
+	Rip         int    `json:"rip"`
+	Instruction string `json:"instruction"`
+	Size        string `json:"size"`
+}
 
 // Get flag: Flag name (ZF, OF, CF, PF, SF, TF, AF, DF, IF)
 // todo gen enum flag
@@ -99,32 +124,30 @@ func (flag) Get(name string) bool {
 	return request[bool]("Flag/Get", map[string]string{"flag": name})
 }
 
-func (flag) Set(name string, value bool) {
-	request[bool]("Flag/Set", map[string]string{"flag": name, "value": fmt.Sprintf("%v", value)})
+func (flag) Set(name string, value bool) string {
+	return request[string]("Flag/Set", map[string]string{"flag": name, "value": fmt.Sprintf("%v", value)})
 }
 
-// # PATTERN API
-// "Pattern/FindMem", {"start": start, "size": size, "pattern": pattern}
-func (pattern) FindMem(startpos int, size int, pattern string) []byte {
-	return request[[]byte]("Pattern/FindMem", map[string]string{"start": fmt.Sprintf("0x%x", startpos), "size": fmt.Sprintf("0x%x", size), "pattern": pattern})
+// FindMemory todo 特征码支持字节切片类型
+func (pattern) FindMemory(start int, size int, pattern string) (address uint) {
+	return request[uint]("Pattern/FindMem", map[string]string{"start": fmt.Sprintf("0x%x", start), "size": fmt.Sprintf("0x%x", size), "pattern": pattern})
 }
 
-// # MISC API
-// "Misc/ParseExpression", {"expression": expression}
-// "Misc/RemoteGetProcAddress", {"module": module, "api": api}
-func (misc) ParseExpression() {
-
+func (misc) ParseExpression(expression string) (value uint) {
+	return request[uint]("Misc/ParseExpression", map[string]string{"expression": expression})
 }
 
-func (misc) RemoteGetProcAddress() {}
+func (misc) GetApiAddressFromModule(module string, api string) (address uint) {
+	return request[uint]("Misc/RemoteGetProcAddress", map[string]string{"module": module, "api": api})
+}
 
-// # LEGACY COMPATIBILITY FUNCTIONS
-//
-// # Construct command to set register
-// "MemRead", {"addr": addr, "size": size}
-// "MemWrite", {"addr": addr, "data": data}
+type memoryBase struct {
+	BaseAddress uint `json:"base_address"`
+	Size        uint `json:"size"`
+}
 
-// "GetModuleList"
-func (memory) MemRead()     {}
-func (memory) MemWrite()    {}
+func (misc) FindMemoryBaseByAddress(address int) memoryBase {
+	return request[memoryBase]("MemoryBase", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+}
+
 func (misc) GetModuleList() {}
