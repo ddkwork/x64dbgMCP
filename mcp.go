@@ -29,11 +29,11 @@ func (debug) Debugging() bool {
 	return request[bool]("Is_Debugging", nil)
 }
 
-func (memory) Read(address int, size uint) []byte {
-	return request[[]byte]("Memory/Read", map[string]string{"addr": fmt.Sprintf("0x%x", address), "size": fmt.Sprintf("%d", size)})
+func (memory) Read(address int, size uint) HexBytes {
+	return request[HexBytes]("Memory/Read", map[string]string{"addr": fmt.Sprintf("0x%x", address), "size": fmt.Sprintf("%d", size)})
 }
 
-func (memory) Write(address int, data []byte) bool {
+func (memory) Write(address int, data HexBytes) bool {
 	return request[bool]("Memory/Write", map[string]string{"addr": fmt.Sprintf("0x%x", address), "data": hex.EncodeToString(data)})
 }
 
@@ -69,18 +69,18 @@ type assemblerResult struct {
 func (assembler) Assemble(address int, instruction string) assemblerResult {
 	return request[assemblerResult]("Assembler/Assemble", map[string]string{"addr": fmt.Sprintf("0x%x", address), "instruction": instruction})
 }
-func (assembler) AssembleMem(address int, instructionOpcodes []byte) bool {
+func (assembler) AssembleMem(address int, instructionOpcodes HexBytes) bool {
 	return request[bool]("Assembler/AssembleMem", map[string]string{"addr": fmt.Sprintf("0x%x", address), "instruction": hex.EncodeToString(instructionOpcodes)})
 }
 
-func (stack) Pop() uint { //todo 改成泛型
-	return request[uint]("Stack/Pop", nil)
+func (stack) Pop() HexInt { //todo 改成泛型
+	return request[HexInt]("Stack/Pop", nil)
 }
-func (stack) Push(value uint) uint {
-	return request[uint]("Stack/Push", map[string]string{"value": fmt.Sprintf("0x%x", value)})
+func (stack) Push(value uint) HexInt {
+	return request[HexInt]("Stack/Push", map[string]string{"value": fmt.Sprintf("0x%x", value)})
 }
-func (stack) Peek(offset int) uint {
-	return request[uint]("Stack/Peek", map[string]string{"offset": fmt.Sprintf("0x%x", offset)})
+func (stack) Peek(offset int) HexInt {
+	return request[HexInt]("Stack/Peek", map[string]string{"offset": fmt.Sprintf("0x%x", offset)})
 }
 
 type disassembler struct{}
@@ -129,16 +129,16 @@ func (flag) Set(name string, value bool) string {
 }
 
 // FindMemory todo 特征码支持字节切片类型
-func (pattern) FindMemory(start int, size int, pattern string) (address uint) {
-	return request[uint]("Pattern/FindMem", map[string]string{"start": fmt.Sprintf("0x%x", start), "size": fmt.Sprintf("%d", size), "pattern": pattern})
+func (pattern) FindMemory(start int, size int, pattern string) (address HexInt) {
+	return request[HexInt]("Pattern/FindMem", map[string]string{"start": fmt.Sprintf("0x%x", start), "size": fmt.Sprintf("%d", size), "pattern": pattern})
 }
 
 func (misc) ParseExpression(expression string) (value uint) {
 	return request[uint]("Misc/ParseExpression", map[string]string{"expression": expression})
 }
 
-func (misc) GetApiAddressFromModule(module string, api string) (address uint) {
-	return request[uint]("Misc/RemoteGetProcAddress", map[string]string{"module": module, "api": api})
+func (misc) GetApiAddressFromModule(module string, api string) (address HexInt) {
+	return request[HexInt]("Misc/RemoteGetProcAddress", map[string]string{"module": module, "api": api})
 }
 
 type memoryBase struct {
@@ -192,17 +192,17 @@ func (module) InfoFromAddr(address int) moduleInfo {
 func (module) InfoFromName(name string) moduleInfo {
 	return request[moduleInfo]("Module/InfoFromName", map[string]string{"name": name})
 }
-func (module) BaseFromAddr(address int) uint {
-	return request[uint]("Module/BaseFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+func (module) BaseFromAddr(address int) HexInt {
+	return request[HexInt]("Module/BaseFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
 }
-func (module) BaseFromName(name string) uint {
-	return request[uint]("Module/BaseFromName", map[string]string{"name": name})
+func (module) BaseFromName(name string) HexInt {
+	return request[HexInt]("Module/BaseFromName", map[string]string{"name": name})
 }
-func (module) SizeFromAddr(address int) uint {
-	return request[uint]("Module/SizeFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+func (module) SizeFromAddr(address int) HexInt {
+	return request[HexInt]("Module/SizeFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
 }
-func (module) SizeFromName(name string) uint {
-	return request[uint]("Module/SizeFromName", map[string]string{"name": name})
+func (module) SizeFromName(name string) HexInt {
+	return request[HexInt]("Module/SizeFromName", map[string]string{"name": name})
 }
 func (module) NameFromAddr(address int) string {
 	return request[string]("Module/NameFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
@@ -213,17 +213,17 @@ func (module) PathFromAddr(address int) string {
 func (module) PathFromName(name string) string {
 	return request[string]("Module/PathFromName", map[string]string{"name": name})
 }
-func (module) EntryFromAddr(address int) uint {
-	return request[uint]("Module/EntryFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+func (module) EntryFromAddr(address int) HexInt {
+	return request[HexInt]("Module/EntryFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
 }
-func (module) EntryFromName(name string) uint {
-	return request[uint]("Module/EntryFromName", map[string]string{"name": name})
+func (module) EntryFromName(name string) HexInt {
+	return request[HexInt]("Module/EntryFromName", map[string]string{"name": name})
 }
-func (module) SectionCountFromAddr(address int) int {
-	return request[int]("Module/SectionCountFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
+func (module) SectionCountFromAddr(address int) HexInt {
+	return request[HexInt]("Module/SectionCountFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
 }
-func (module) SectionCountFromName(name string) int {
-	return request[int]("Module/SectionCountFromName", map[string]string{"name": name})
+func (module) SectionCountFromName(name string) HexInt {
+	return request[HexInt]("Module/SectionCountFromName", map[string]string{"name": name})
 }
 func (module) SectionFromAddr(address int, number int) moduleSectionInfo {
 	return request[moduleSectionInfo]("Module/SectionFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address), "number": fmt.Sprintf("%d", number)})
@@ -240,14 +240,14 @@ func (module) SectionListFromName(name string) []moduleSectionInfo {
 func (module) GetMainModuleInfo() moduleInfo {
 	return request[moduleInfo]("Module/GetMainModuleInfo", nil)
 }
-func (module) GetMainModuleBase() uint {
-	return request[uint]("Module/GetMainModuleBase", nil)
+func (module) GetMainModuleBase() HexInt {
+	return request[HexInt]("Module/GetMainModuleBase", nil)
 }
-func (module) GetMainModuleSize() uint {
-	return request[uint]("Module/GetMainModuleSize", nil)
+func (module) GetMainModuleSize() HexInt {
+	return request[HexInt]("Module/GetMainModuleSize", nil)
 }
-func (module) GetMainModuleEntry() uint {
-	return request[uint]("Module/GetMainModuleEntry", nil)
+func (module) GetMainModuleEntry() HexInt {
+	return request[HexInt]("Module/GetMainModuleEntry", nil)
 }
 func (module) GetMainModuleSectionCount() int {
 	return request[int]("Module/GetMainModuleSectionCount", nil)
