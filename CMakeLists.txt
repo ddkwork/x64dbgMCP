@@ -37,6 +37,10 @@ target_link_libraries(${PROJECT_NAME}
         winhttp
         ${LIBS})
 
+#copy MCPx64dbg.dp32  release\x32
+#copy MCPx64dbg.dp64  release\x64
+
+
 
 # post-build information
 set(plugin_path "${CMAKE_BINARY_DIR}/${CMAKE_CFG_INTDIR}/${PROJECT_NAME}${plugin_ext}")
