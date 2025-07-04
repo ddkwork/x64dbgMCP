@@ -11,3 +11,4 @@ cmake --build cmake-build-debug --config Release -j 6
 copy cmake-build-debug\Release\MCPx64dbg.dp32 .
 
 rmdir /s /q cmake-build-debug
+pause

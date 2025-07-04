@@ -6,15 +6,31 @@ import (
 )
 
 type (
-	command   struct{}
-	register  struct{}
-	memory    struct{}
-	debug     struct{}
-	assembler struct{}
-	stack     struct{}
-	flag      struct{}
-	pattern   struct{}
-	misc      struct{}
+	command      struct{}
+	register     struct{}
+	memory       struct{}
+	debug        struct{}
+	assembler    struct{}
+	stack        struct{}
+	flag         struct{}
+	pattern      struct{}
+	misc         struct{}
+	module       struct{}
+	disassembler struct{}
+
+	x64dbg struct {
+		Command      command
+		Register     register
+		Memory       memory
+		Debug        debug
+		Assembler    assembler
+		Stack        stack
+		Flag         flag
+		Pattern      pattern
+		Misc         misc
+		Module       module
+		Disassembler disassembler
+	}
 )
 
 func (command) Exec(cmd string) string {
@@ -82,8 +98,6 @@ func (stack) Push(value uint) HexInt {
 func (stack) Peek(offset int) HexInt {
 	return request[HexInt]("Stack/Peek", map[string]string{"offset": fmt.Sprintf("0x%x", offset)})
 }
-
-type disassembler struct{}
 
 func (disassembler) AtAddress(address int) disassemblerAddress {
 	return request[disassemblerAddress]("Disasm/GetInstruction", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
@@ -184,7 +198,6 @@ type moduleImport struct {
 }
 
 // todo implement other method in cpp server
-type module struct{}
 
 func (module) InfoFromAddr(address int) moduleInfo {
 	return request[moduleInfo]("Module/InfoFromAddr", map[string]string{"addr": fmt.Sprintf("0x%x", address)})
