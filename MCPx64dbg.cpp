@@ -1,10 +1,7 @@
 //  +build ignore
-//#define BUILD_DBG
-
 
 #define WINSOCK_DEPRECATED_NO_WARNINGS
 #define WIN32_LEAN_AND_MEAN
-
 
 // Include Windows headers before socket headers
 #include <Windows.h>
