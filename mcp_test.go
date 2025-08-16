@@ -912,8 +912,3 @@ func (m RegisterManager) Set(reg RegisterEnum, value uint) bool {
 
 `
 )
-
-func Test_X64dbg(t *testing.T) {
-	x := x64dbg{}
-	x.Command.Exec("restartadmin")
-}

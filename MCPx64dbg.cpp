@@ -286,6 +286,10 @@ DWORD WINAPI HttpServerThread(LPVOID lpParam) {
             // Parse query parameters
             std::unordered_map<std::string, std::string> queryParams = parseQueryParams(query);
 
+            //findasm "mov dword ptr ds:[edi+0x5E8],eax", 0x401000
+            DbgCmdExecDirect("findasm \"mov dword ptr ds:[edi+0x5E8],eax\", 0x401000");
+           //DbgGetBpList();
+
             // Handle different endpoints
             try {
                 // Unified command execution endpoint
@@ -303,8 +307,7 @@ DWORD WINAPI HttpServerThread(LPVOID lpParam) {
                     // Generate unique temporary log file
                     char tempPath[MAX_PATH];
                     GetTempPathA(MAX_PATH, tempPath);
-                    std::string logFile =
-                            std::string(tempPath) + "x64dbg_cmd_" + std::to_string(GetTickCount()) + ".log";
+                    std::string logFile =  std::string(tempPath) + "x64dbg_cmd_" + std::to_string(GetTickCount()) + ".log";
 
                     // Start log redirection
                     std::string redirectCmd = "LogRedirect \"" + logFile + "\"";
